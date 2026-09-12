@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FabriTrade</title>
+<style>
+  :root{
+    --blue:#1f4e79; --blue2:#2e75b6; --light:#dce6f1; --grey:#f2f4f7;
+    --line:#e2e6ec; --text:#1a2230; --muted:#647084; --green:#1f9d6b; --gold:#caa14a;
+    --radius:12px; --shadow:0 1px 3px rgba(20,30,50,.08),0 4px 16px rgba(20,30,50,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:#fafbfc;line-height:1.5;transition:background .2s,color .2s}
+  body.dark{
+    --blue:#5b9bd5; --blue2:#7cb3e0; --light:#1e2d3f; --grey:#1a2330;
+    --line:#2a3545; --text:#e6ebf2; --muted:#93a0b4; --shadow:0 4px 18px rgba(0,0,0,.4);
+    background:#0f151e;
+  }
+  body.dark header{background:#141c27;border-bottom-color:#2a3545}
+  body.dark .card,body.dark .panel,body.dark .buybox,body.dark .form,body.dark .stat,body.dark table.data,body.dark .chat-wrap,body.dark .sellerbox,body.dark .modal,body.dark .search,body.dark select.lang,body.dark .role,body.dark .panel input,body.dark .panel select,body.dark .form input,body.dark .form select,body.dark .form textarea,body.dark .composer input,body.dark .qty input{background:#141c27;color:var(--text)}
+  body.dark .chat .head,body.dark .thread{background:#141c27}
+  body.dark .thread:hover,body.dark .thread.active{background:#1a2330}
+  body.dark .msg.them{background:#243142}
+  body.dark table.data tr:nth-child(even) td,body.dark .card .swatch{background:#1a2330}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  img{display:block}
+  /* header */
+  header{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line)}
+  .bar{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:18px;padding:12px 20px}
+  .logo{font-weight:800;font-size:22px;color:var(--blue);letter-spacing:-.5px;cursor:pointer;display:flex;align-items:center;gap:8px}
+  .logo .dot{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:inline-block}
+  nav{display:flex;gap:4px;margin-left:6px;flex:1}
+  nav button{padding:8px 14px;border-radius:8px;color:var(--muted);font-size:14.5px;font-weight:600}
+  nav button:hover{background:var(--grey);color:var(--text)}
+  nav button.active{background:var(--light);color:var(--blue)}
+  .ctrl{display:flex;align-items:center;gap:10px}
+  select.lang{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;background:#fff;font-weight:600;color:var(--text)}
+  .role{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .role button{padding:7px 11px;font-size:12.5px;font-weight:700;color:var(--muted)}
+  .role button.on{background:var(--blue);color:#fff}
+  .badge{background:var(--blue);color:#fff;border-radius:999px;font-size:11px;padding:2px 7px;font-weight:700;margin-left:4px}
+  .iconbtn{position:relative;width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--muted)}
+  .iconbtn:hover{background:var(--grey);color:var(--text)}
+  .iconbtn .count{position:absolute;top:-3px;right:-3px;background:#e0533d;color:#fff;border-radius:999px;font-size:10px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-weight:800}
+  .heart{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:15px;z-index:3;cursor:pointer;transition:.15s}
+  .heart:hover{transform:scale(1.12)}
+  .heart.on{color:#e0533d}
+  .swatch .cert{right:44px}
+  select.cur{padding:7px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;font-weight:700;color:var(--text)}
+  /* layout */
+  main{max-width:1180px;margin:0 auto;padding:24px 20px 60px}
+  h1.page{font-size:26px;margin:4px 0 4px}
+  .sub{color:var(--muted);margin:0 0 22px;font-size:14.5px}
+  /* hero */
+  .hero{background:linear-gradient(120deg,#1f4e79,#2e75b6);border-radius:18px;color:#fff;padding:34px 34px;margin-bottom:26px;position:relative;overflow:hidden}
+  .hero h2{margin:0 0 8px;font-size:30px;font-weight:800}
+  .hero p{margin:0;opacity:.92;font-size:15.5px;max-width:560px}
+  .hero .tags{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+  .hero .tags span{background:rgba(255,255,255,.16);padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600}
+  /* search row */
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+  .search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff}
+  .search input{border:none;outline:none;padding:11px 0;font-size:14.5px;width:100%;background:none}
+  .filters{display:flex;gap:18px;align-items:flex-start}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px;width:230px;flex:none}
+  .panel h4{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  .panel label{display:block;font-size:13.5px;margin:0 0 5px;font-weight:600}
+  .panel select,.panel input{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;margin-bottom:12px;background:#fff}
+  .panel .clear{font-size:12.5px;color:var(--blue2);font-weight:700}
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;flex:1}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:.15s;display:flex;flex-direction:column}
+  .card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+  .swatch{height:140px;position:relative;overflow:hidden}
+  .swatch .ph,.bigswatch .ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+  .swatch .pin,.swatch .cert{z-index:2}
+  .swatch .pin{position:absolute;top:8px;left:8px;background:rgba(255,255,255,.92);border-radius:6px;font-size:11px;font-weight:700;padding:3px 7px;color:var(--text)}
+  .swatch .cert{position:absolute;top:8px;right:8px;background:var(--green);color:#fff;border-radius:6px;font-size:10px;font-weight:700;padding:3px 7px}
+  .card .body{padding:12px 13px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .card .ttl{font-weight:700;font-size:14.5px;line-height:1.3}
+  .card .meta{font-size:12.5px;color:var(--muted)}
+  .card .price{font-weight:800;color:var(--blue);font-size:16px;margin-top:auto}
+  .card .moq{font-size:11.5px;color:var(--muted)}
+  .seller-line{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+  .star{color:var(--gold);font-size:12px}
+  /* detail */
+  .detail{display:grid;grid-template-columns:1fr 360px;gap:26px}
+  @media(max-width:820px){.detail{grid-template-columns:1fr!important}.filters{flex-direction:column}.panel{width:100%}}
+  .bigswatch{height:300px;border-radius:14px;position:relative;overflow:hidden}
+  .bigswatch .ph{border-radius:14px}
+  .spec-table{width:100%;border-collapse:collapse;margin-top:14px}
+  .spec-table td{padding:9px 12px;border-bottom:1px solid var(--line);font-size:14px}
+  .spec-table td:first-child{color:var(--muted);width:42%}
+  .spec-table td:last-child{font-weight:600}
+  .buybox{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;position:sticky;top:80px}
+  .buybox .p{font-size:26px;font-weight:800;color:var(--blue)}
+  .row{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin:7px 0}
+  .row .mut{color:var(--muted)}
+  .qty{display:flex;align-items:center;gap:8px;margin:14px 0}
+  .qty input{width:90px;padding:9px;border:1px solid var(--line);border-radius:8px;font-size:15px;text-align:center}
+  .btn{display:block;width:100%;text-align:center;padding:12px;border-radius:10px;font-weight:700;font-size:15px;margin-top:10px}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:#163a5c}
+  .btn-ghost{background:#fff;border:1px solid var(--blue);color:var(--blue)}
+  .btn-ghost:hover{background:var(--light)}
+  .hr{height:1px;background:var(--line);margin:14px 0}
+  .commission-note{background:var(--grey);border-radius:10px;padding:12px;font-size:12.5px;color:var(--muted);margin-top:12px}
+  .commission-note b{color:var(--text)}
+  .back{color:var(--blue2);font-weight:700;font-size:14px;margin-bottom:14px;display:inline-block}
+  /* seller box */
+  .sellerbox{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:16px;display:flex;gap:12px;align-items:center}
+  .avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex:none}
+  /* messages */
+  .chat-wrap{display:grid;grid-template-columns:260px 1fr;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff;min-height:520px}
+  @media(max-width:820px){.chat-wrap{grid-template-columns:1fr}.threads{display:none}}
+  .threads{border-right:1px solid var(--line);background:var(--grey)}
+  .thread{padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+  .thread:hover,.thread.active{background:#fff}
+  .thread .n{font-weight:700;font-size:14px}
+  .thread .last{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat{display:flex;flex-direction:column}
+  .chat .head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .msgs{flex:1;padding:18px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:380px}
+  .msg{max-width:74%;padding:9px 13px;border-radius:14px;font-size:14px}
+  .msg.them{background:var(--grey);align-self:flex-start;border-bottom-left-radius:4px}
+  .msg.me{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .msg .tr{display:block;font-size:11.5px;opacity:.7;margin-top:4px;font-style:italic}
+  .composer{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+  .composer input{flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+  .toggle{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600}
+  /* forms */
+  .form{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;max-width:640px}
+  .form .fld{margin-bottom:16px}
+  .form label{display:block;font-weight:700;font-size:13.5px;margin-bottom:6px}
+  .form input,.form select,.form textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .uploader{border:2px dashed var(--line);border-radius:12px;min-height:170px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;text-align:center;background:var(--grey);transition:.15s}
+  .uploader:hover{border-color:var(--blue2);background:var(--light)}
+  .uploader .up-empty{padding:24px}
+  .uploader .preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .rmphoto{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);color:#fff;border-radius:8px;font-size:12px;font-weight:700;padding:6px 10px;z-index:2}
+  .rmphoto:hover{background:rgba(0,0,0,.8)}
+  /* dashboard */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:22px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .stat .lbl{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  .stat .val{font-size:28px;font-weight:800;margin-top:6px;color:var(--blue)}
+  .stat .val.green{color:var(--green)}
+  table.data{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  table.data th{background:var(--blue);color:#fff;text-align:left;padding:11px 14px;font-size:12.5px;text-transform:uppercase;letter-spacing:.3px}
+  table.data td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:13.5px}
+  table.data tr:nth-child(even) td{background:var(--grey)}
+  .pill{border-radius:999px;font-size:11px;font-weight:700;padding:3px 9px}
+  .pill.escrow{background:#fff4d6;color:#9a7400}
+  .pill.done{background:#d8f3e6;color:#13754f}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(15,25,40,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:16px;max-width:440px;width:100%;padding:26px;animation:pop .2s}
+  @keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal h3{margin:0 0 4px;font-size:20px}
+  .modal .check{width:56px;height:56px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px}
+  .ord-row{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px dashed var(--line)}
+  .ord-row.tot{font-weight:800;border-bottom:none;font-size:16px;margin-top:4px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:200;opacity:0;transition:.3s;pointer-events:none}
+  .toast.show{opacity:1}
+  .empty{text-align:center;color:var(--muted);padding:50px;font-size:14.5px}
+  @media(max-width:820px){.cartlayout{grid-template-columns:1fr!important}}
+  .section-h{font-size:18px;font-weight:800;margin:6px 0 12px;display:flex;align-items:center;gap:8px}
+  .hscroll{display:flex;gap:14px;overflow-x:auto;padding:2px 2px 12px;margin-bottom:10px;scroll-snap-type:x mandatory}
+  .hscroll .card{width:210px;flex:none;scroll-snap-align:start}
+  .hscroll::-webkit-scrollbar{height:8px}.hscroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+  #toTop{position:fixed;bottom:90px;right:24px;width:46px;height:46px;border-radius:50%;background:var(--blue);color:#fff;font-size:20px;box-shadow:var(--shadow);z-index:80;opacity:0;pointer-events:none;transition:.2s}
+  #toTop.show{opacity:1;pointer-events:auto}
+  #toTop:hover{background:#163a5c}
+  /* AI assistant */
+  .ai-cap{background:linear-gradient(120deg,#5b2ea6,#3a56d4);border-radius:16px;color:#fff;padding:18px 22px;margin-bottom:22px}
+  .ai-cap .ct{font-weight:800;font-size:16px;margin-bottom:12px}
+  .ai-cap .caps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  .ai-cap .cap{background:rgba(255,255,255,.14);border-radius:10px;padding:11px 13px;font-size:13px;font-weight:600;display:flex;gap:8px;align-items:flex-start}
+  .ai-fab{position:fixed;bottom:24px;right:24px;height:54px;padding:0 20px;border-radius:999px;background:linear-gradient(135deg,#7b3ff2,#4361ee);color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;box-shadow:0 6px 24px rgba(80,60,200,.45);z-index:120;border:none;cursor:pointer}
+  .ai-fab:hover{transform:translateY(-2px)}
+  .ai-panel{position:fixed;bottom:90px;right:24px;width:370px;max-width:calc(100vw - 32px);height:500px;max-height:76vh;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 48px rgba(20,30,60,.28);z-index:120;display:none;flex-direction:column;overflow:hidden}
+  .ai-panel.show{display:flex}
+  body.dark .ai-panel{background:#141c27}
+  .ai-head{background:linear-gradient(135deg,#7b3ff2,#4361ee);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+  .ai-head .tt{font-weight:800}.ai-head .ss{font-size:11.5px;opacity:.85}
+  .ai-head .x{cursor:pointer;font-size:18px;opacity:.9}
+  .ai-msgs{flex:1;padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:var(--grey)}
+  .ai-msg{max-width:86%;padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.5}
+  .ai-msg.bot{background:#fff;align-self:flex-start;border:1px solid var(--line);border-bottom-left-radius:4px}
+  body.dark .ai-msg.bot{background:#1a2330}
+  .ai-msg.me{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .ai-chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:var(--grey);border-top:1px solid var(--line)}
+  .ai-chip{font-size:12px;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:999px;padding:6px 10px;cursor:pointer}
+  .ai-chip:hover{background:var(--light)}body.dark .ai-chip{background:#1a2330}
+  .ai-composer{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:#fff}
+  body.dark .ai-composer{background:#141c27}
+  .ai-composer input{flex:1;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fff;color:var(--text)}
+  body.dark .ai-composer input{background:#1a2330}
+  .ai-mod{background:linear-gradient(90deg,#ede7ff,#e6efff);color:#4b2ea6;font-size:12px;font-weight:700;padding:8px 14px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line)}
+  body.dark .ai-mod{background:#241a3d;color:#c3b2ff}
+  .msg-ai{align-self:center;max-width:92%;background:#fff5e6;border:1px solid #f0c675;color:#8a5a00;border-radius:12px;padding:10px 13px;font-size:12.5px;line-height:1.5;text-align:center}
+  body.dark .msg-ai{background:#3a2e12;border-color:#6b5320;color:#f2cf8a}
+  .pbreaks{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:12px 0}
+  .pb-h{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:6px}
+  .pb-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 6px;border-radius:6px}
+  .pb-row.on{background:var(--light);font-weight:800;color:var(--blue)}
+  .track{display:flex;align-items:center;margin-top:14px}
+  .tstep{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none}
+  .tdot{width:26px;height:26px;border-radius:50%;background:var(--grey);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--muted)}
+  .tstep.done .tdot{background:var(--green);border-color:var(--green);color:#fff}
+  .tlbl{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}
+  .tstep.done .tlbl{color:var(--text)}
+  .tbar{flex:1;height:3px;background:var(--line);margin:0 4px;margin-bottom:18px;border-radius:2px}
+  .tbar.done{background:var(--green)}
+  /* best-version polish */
+  .card{animation:cardIn .32s ease both}
+  @keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .statband{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  @media(max-width:640px){.statband{grid-template-columns:repeat(2,1fr)}}
+  .statband .s{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 12px;text-align:center}
+  body.dark .statband .s{background:#141c27}
+  .statband .n{font-size:23px;font-weight:800;color:var(--blue)}
+  .statband .l{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+  .how{background:linear-gradient(120deg,#f4f7fb,#eef3fb);border:1px solid var(--line);border-radius:16px;padding:22px;margin:2px 0 24px}
+  body.dark .how{background:#141c27}
+  .how h3{margin:0 0 16px;font-size:18px}
+  .how .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:700px){.how .cols{grid-template-columns:1fr}}
+  .how .c .hn{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;margin-bottom:8px}
+  .how .c .ht{font-weight:800;margin-bottom:3px}
+  .how .c .hd{font-size:13px;color:var(--muted)}
+  footer#foot{max-width:1180px;margin:0 auto;padding:26px 20px 46px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  footer#foot .ft-top{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center}
+  footer#foot .brand{font-weight:800;color:var(--blue);font-size:18px;display:flex;align-items:center;gap:8px}
+  footer#foot .brand .dot{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,var(--blue),var(--blue2))}
+  footer#foot .trust{display:flex;gap:16px;flex-wrap:wrap}
+  footer#foot .cr{margin-top:14px;font-size:12px;opacity:.8}
+  @media(max-width:760px){ nav{overflow-x:auto;-webkit-overflow-scrolling:touch} nav button{white-space:nowrap} .bar{gap:8px} .who{display:none} }
+  /* auth screen */
+  body.auth header, body.auth #foot, body.auth .ai-fab, body.auth #toTop{display:none!important}
+  .authwrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:30px 16px}
+  .authcard{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:30px;width:100%;max-width:420px}
+  body.dark .authcard{background:#141c27}
+  .authcard .logo{font-size:26px;margin-bottom:4px}
+  .authcard h2{margin:8px 0 4px;font-size:22px}
+  .authcard .as{color:var(--muted);font-size:13.5px;margin:0 0 18px}
+  .authcard label{display:block;font-weight:700;font-size:13px;margin:0 0 5px}
+  .authcard input{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;font-size:14px;margin-bottom:13px;background:#fff;color:var(--text)}
+  body.dark .authcard input{background:#1a2330}
+  .authcard .roleseg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:14px}
+  .authcard .roleseg button{flex:1;padding:11px;font-size:13.5px;font-weight:700;color:var(--muted)}
+  .authcard .roleseg button.on{background:var(--blue);color:#fff}
+  .authcard .switch{text-align:center;font-size:13.5px;margin-top:12px}
+  .authcard .switch a{color:var(--blue);font-weight:700;cursor:pointer}
+  .authcard .err{background:#fde8e6;color:#b03a2e;border-radius:8px;padding:10px;font-size:13px;margin-bottom:12px}
+  .authcard .priv{text-align:center;font-size:11.5px;color:var(--muted);margin-top:14px}
+  .userchip{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap}
+  @media(max-width:760px){ .userchip{display:none} }
+  /* tab transition */
+  #app.view-in{animation:viewIn .32s cubic-bezier(.2,.7,.3,1)}
+  @keyframes viewIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  nav button{transition:background .18s,color .18s}
+  /* welcome intro (foot-in-the-door) */
+  .introwrap{min-height:calc(100vh - 40px);display:flex;align-items:center;justify-content:center;padding:26px 16px;
+    background:radial-gradient(1100px 500px at 50% -10%, rgba(67,97,238,.16), transparent)}
+  .introcard{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 18px 60px rgba(20,30,60,.18);padding:34px 30px;width:100%;max-width:440px;text-align:center;animation:introIn .42s cubic-bezier(.2,.8,.3,1)}
+  body.dark .introcard{background:#141c27}
+  @keyframes introIn{from{opacity:0;transform:scale(.95) translateY(14px)}to{opacity:1;transform:none}}
+  .introcard .ilogo{font-weight:800;font-size:20px;color:var(--blue);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px}
+  .introcard .ilogo .dot{width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,var(--blue),var(--blue2))}
+  .introcard h2{font-size:23px;margin:6px 0 10px}
+  .introcard .isub{color:var(--muted);font-size:14.5px;margin:0 0 22px;line-height:1.55}
+  .introcard .ibtn{display:block;width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#4361ee,#7b3ff2);color:#fff;font-weight:800;font-size:15px;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 6px 20px rgba(80,60,200,.35)}
+  .introcard .ibtn:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(80,60,200,.45)}
+  .introcard .ibtn.sec{background:#fff;color:var(--blue);border:1.5px solid var(--blue);box-shadow:none;margin-top:10px}
+  body.dark .introcard .ibtn.sec{background:transparent}
+  .introcard .whylist{text-align:left;display:flex;flex-direction:column;gap:12px;margin:0 0 22px}
+  .introcard .whylist .w{font-size:13.5px;line-height:1.5;background:var(--grey);border-radius:10px;padding:12px 13px}
+  body.dark .introcard .whylist .w{background:#1a2330}
+  .introdots{display:flex;gap:6px;justify-content:center;margin:0 0 18px}
+  .introdots i{width:7px;height:7px;border-radius:50%;background:var(--line);display:inline-block;transition:.2s}
+  .introdots i.on{background:var(--blue);width:20px;border-radius:5px}
+  .introskip{margin-top:16px;font-size:12.5px;color:var(--muted);cursor:pointer}
+  .introskip:hover{color:var(--text)}
+  /* guided tour card */
+  .tourcard{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:460px;max-width:calc(100vw - 24px);background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 60px rgba(20,30,60,.3);padding:18px 20px;z-index:130;display:none;animation:tourIn .35s cubic-bezier(.2,.8,.3,1)}
+  .tourcard.show{display:block}
+  body.dark .tourcard{background:#141c27}
+  @keyframes tourIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%)}}
+  .tourcard .tc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .tourcard .tc-step{font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--blue2)}
+  .tourcard .tc-x{cursor:pointer;color:var(--muted);font-size:16px}
+  .tourcard h4{margin:0 0 6px;font-size:17px}
+  .tourcard p{margin:0 0 14px;font-size:14px;color:var(--muted);line-height:1.5}
+  .tourcard .tc-prog{height:5px;background:var(--grey);border-radius:5px;overflow:hidden;margin-bottom:12px}
+  .tourcard .tc-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),#7b3ff2);transition:width .3s}
+  .tourcard .tc-btns{display:flex;gap:8px;align-items:center}
+  .tourcard .tc-btns .sp{flex:1}
+  .tourcard .tc-skip{font-size:12.5px;color:var(--muted);cursor:pointer}
+  .tourcard .tc-skip:hover{color:var(--text)}
+  .tourcard .btn{margin-top:0;width:auto;padding:10px 16px;font-size:14px}
+  .ai-fab.pulse{animation:pulse 1s ease-in-out 3}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  .faq{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+  body.dark .faq{background:#141c27}
+  .faq summary{cursor:pointer;padding:14px 16px;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary:after{content:"+";color:var(--blue2);font-size:18px;font-weight:800}
+  .faq[open] summary:after{content:"–"}
+  .faq .fa{padding:0 16px 14px;color:var(--muted);font-size:14px;line-height:1.55}
+  .notif-wrap{position:relative}
+  .notif-panel{position:absolute;right:0;top:46px;width:300px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);z-index:90;display:none;overflow:hidden}
+  .notif-panel.show{display:block}
+  body.dark .notif-panel{background:#141c27}
+  .notif-panel .nh{padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;display:flex;justify-content:space-between;align-items:center}
+  .notif-item{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13.5px;display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+  .notif-item:hover{background:var(--grey)}
+  .notif-item .ic{font-size:18px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="logo" onclick="go('browse')"><span class="dot"></span>FabriTrade</div>
+    <nav id="nav"></nav>
+    <div class="ctrl">
+      <div class="notif-wrap">
+        <button class="iconbtn" id="bellBtn" title="Notifications" onclick="toggleNotifs(event)">🔔<span class="count">3</span></button>
+        <div class="notif-panel" id="notifPanel"></div>
+      </div>
+      <button class="iconbtn" id="favBtn" title="Saved" onclick="go('fav')">♥</button>
+      <button class="iconbtn" id="cartBtn" title="Cart" onclick="go('cart')">🛒</button>
+      <button class="iconbtn" id="helpBtn" title="Tutorial" onclick="openTour()">❓</button>
+      <button class="iconbtn" id="darkBtn" title="Theme" onclick="toggleDark()">🌙</button>
+      <select class="cur" id="cur" onchange="setCur(this.value)" title="Currency">
+        <option value="USD">USD $</option>
+        <option value="VND">VND ₫</option>
+        <option value="CNY">CNY ¥</option>
+      </select>
+      <div class="role" id="roleSwitch"></div>
+      <select class="lang" id="lang" onchange="setLang(this.value)">
+        <option value="en">🌐 English</option>
+        <option value="zh">🇨🇳 中文</option>
+        <option value="vi">🇻🇳 Tiếng Việt</option>
+      </select>
+      <span class="userchip" id="userChip"></span>
+      <button class="iconbtn" id="logoutBtn" title="Log out" onclick="logout()">⎋</button>
+    </div>
+  </div>
+</header>
+<main id="app"></main>
+
+<footer id="foot"></footer>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toast" id="toast"></div>
+<button id="toTop" title="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<button class="ai-fab" id="aiFab" onclick="toggleAI()">✨ <span id="aiFabLabel">AI</span></button>
+<div class="ai-panel" id="aiPanel"></div>
+<div class="tourcard" id="tourCard"></div>
+
+<script>
+/* ============ i18n ============ */
+const I18N = {
+  en:{
+    nav_browse:"Browse", nav_messages:"Messages", nav_sell:"Sell Fabric", nav_orders:"My Orders", nav_dash:"Owner Dashboard",
+    role_buyer:"Buyer", role_seller:"Seller",
+    hero_t:"The global marketplace for fabric & textiles",
+    hero_p:"Buy, sell, and trade fabric across the world — with Vietnam at the center. Talk directly to suppliers, order samples, and ship across borders.",
+    tag1:"Export-ready from Vietnam", tag2:"Low MOQ for designers", tag3:"Certified organic", tag4:"Bulk B2B pricing",
+    search_ph:"Search fabric, e.g. cotton jersey, denim, silk…",
+    f_type:"Fabric type", f_origin:"Origin", f_cert:"Certification", f_maxmoq:"Max MOQ (m)", f_maxprice:"Max price /m (USD)", f_all:"All", f_clear:"Clear filters",
+    moq:"MOQ", per_m:"/m", results:"fabrics found",
+    by:"by", view:"View details",
+    back:"Back to marketplace",
+    composition:"Composition", weight:"Weight", width:"Width", color:"Color", cert:"Certifications", origin:"Origin", lead:"Lead time", stock:"In stock", incoterm:"Shipping terms", sample:"Sample", days:"days", available:"Available",
+    contact:"Contact seller", order_qty:"Order quantity (m)", buy_now:"Buy now (secure escrow)",
+    subtotal:"Subtotal", you_pay:"You pay", comm_line:"Platform fee deducted from seller (3.5%)", seller_gets:"Seller receives",
+    comm_note:"<b>How it works:</b> Your payment is held in secure escrow until you confirm delivery. FabriTrade earns a <b>3.5% commission</b> on every completed trade — deducted from the seller's payout, never added to your price.",
+    seller_since:"AI-Verified seller", trades:"trades", rating:"rating",
+    chat_title:"Messages", translate:"AI auto-translate", type_msg:"Type a message…", send:"Send", no_thread:"Select a conversation",
+    contacted:"Message sent to seller — opening chat",
+    sell_title:"List your fabric", sell_sub:"Create a listing. It's free — FabriTrade only earns when your fabric sells.",
+    fld_title:"Listing title", fld_type:"Fabric type", fld_comp:"Composition", fld_gsm:"Weight (GSM)", fld_width:"Width (cm)", fld_price:"Price per meter (USD)", fld_moq:"Minimum order (m)", fld_origin:"Origin (city, country)", fld_cert:"Certification (optional)", fld_color:"Main color", publish:"Publish listing", listed_ok:"Fabric listed! It's now live in the marketplace.",
+    orders_title:"My Orders", ord_empty:"No orders yet. Browse the marketplace to place your first order.",
+    o_item:"Item", o_qty:"Qty", o_total:"You paid", o_status:"Status", o_date:"Date", st_escrow:"In escrow", st_done:"Completed",
+    dash_title:"Owner Dashboard", dash_sub:"Your revenue from the 3.5% commission on every trade.",
+    d_gmv:"Gross Merchandise Value", d_comm:"Your Commission (3.5%)", d_orders:"Completed Orders", d_users:"Active Users", d_avail:"Available to withdraw",
+    recent:"Recent transactions", t_order:"Order", t_buyer:"Buyer", t_value:"Trade value", t_comm:"Your fee", t_status:"Status",
+    confirm_buy:"Confirm your order", cancel:"Cancel", place:"Place order & pay",
+    order_done:"Order placed!", order_done_p:"Your payment is safely held in escrow. The seller has been notified to prepare your fabric.",
+    great:"Great", switch_seller:"Switched to Seller view", switch_buyer:"Switched to Buyer view",
+    nav_fav:"Saved", nav_cart:"Cart",
+    add_cart:"Add to cart", in_cart:"In cart ✓", added_cart:"Added to cart", remove:"Remove",
+    cart_title:"Shopping Cart", cart_empty:"Your cart is empty. Browse the marketplace to add fabric.", checkout:"Checkout — pay securely", items:"items",
+    fav_title:"Saved Fabrics", fav_empty:"No saved fabrics yet. Tap ♥ on any fabric to save it.", saved_on:"Saved to your list", saved_off:"Removed from saved",
+    sort:"Sort", sort_rel:"Relevance", sort_pl:"Price: low to high", sort_ph:"Price: high to low", sort_rate:"Top rated", sort_moq:"Lowest MOQ", sort_new:"Newest",
+    sample_req:"Request a sample", sample_sent:"Sample request sent — the seller will reply with shipping cost.",
+    reviews:"Buyer reviews", verified_purchase:"Verified purchase",
+    currency:"Currency", dark_on:"Dark mode", dark_off:"Light mode",
+    cart_comm:"Platform fee (3.5%, from sellers)", cart_pay:"Total you pay",
+    qview:"Quick view",
+    fld_photo:"Product photo", photo_hint:"Upload your own fabric photo (JPG/PNG). Or skip — we'll use a stock photo by type.", photo_choose:"Choose photo", photo_added:"Photo added", photo_remove:"Remove photo",
+    nav_store:"My Listings", store_title:"My Listings", store_sub:"Products you've put up for sale. Customers can buy these right now.", store_empty:"You haven't listed any products yet.", list_new:"＋ List a product", edit:"Edit", del:"Delete", your_listing:"Your listing", deleted_ok:"Listing removed", saved_ok:"Changes saved", save_changes:"Save changes", live:"Live", del_confirm:"Remove this listing?",
+    trending:"Trending now", recent_viewed:"Recently viewed", related:"You might also like", more_seller:"More from this seller", visit_store:"Visit store", seller_store:"Store", products_word:"products",
+    notifs:"Notifications", no_notifs:"No notifications", notif1:"New message from Nam Phong Textiles", notif2:"Your order is being prepared for shipping", notif3:"A fabric you saved is now in stock", mark_read:"Mark all read", clear_data:"Reset demo data",
+    ai_open:"AI Assistant", ai_title:"FabriTrade AI", ai_sub:"Helping buyers & sellers 24/7", ai_ph:"Ask the AI anything…", ai_send:"Send",
+    ai_cap_t:"✨ Powered by AI — the platform runs itself",
+    ai_cap1:"Instant translation between traders in any language", ai_cap2:"24/7 support & deal guidance", ai_cap3:"AI-verified companies & fraud checks", ai_cap4:"Smart fabric matching & fair-price help",
+    ai_chip1:"How does the 3.5% fee work?", ai_chip2:"Find me organic cotton", ai_chip3:"Is this seller trustworthy?", ai_chip4:"Help with import/export",
+    nav_market:"AI Price Watch", market_title:"AI Price Watch", market_sub:"AI scans world news 24/7 and predicts how events move textile prices.", mkt_up:"Price ↑", mkt_down:"Price ↓", mkt_affects:"Affects", mkt_updated:"Updated by AI just now",
+    ai_mod:"AI moderator is watching this chat to keep you safe from scams", ai_mod_warn:"⚠️ AI Safety Alert: This looks like a request to pay or move the deal off-platform. Keep payment inside FabriTrade escrow — off-platform deals aren't protected and are the #1 sign of a scam.",
+    price_breaks:"Bulk price breaks", tier_qty:"Order size", tier_price:"Per meter", best_price:"✓ best price applied",
+    sample_order:"Order a sample swatch", sample_desc:"Get a small piece to check quality before a big order.", sample_fee:"Sample + shipping", sample_confirm:"Order sample", sample_placed:"Sample ordered — the seller will ship you a swatch.",
+    track_paid:"Paid", track_prep:"Preparing", track_ship:"Shipped", track_deliver:"Delivered",
+    ai_fill:"✨ AI: auto-fill details", ai_filled:"AI filled in suggested details — review and edit as you like.",
+    tour_title:"Welcome to FabriTrade 👋", tour_body:"A quick 30-second tour:", tour1:"🛍️ Browse & buy fabric from sellers worldwide.", tour2:"🏬 List your own fabric to sell in seconds.", tour3:"🛡️ Every chat is protected by an AI scam-moderator.", tour4:"📈 AI Price Watch tracks world news that moves prices.", tour_go:"Start exploring", tour_skip:"Maybe later",
+    sp_traders:"active traders", sp_countries:"countries", sp_gmv:"traded to date", sp_rating:"avg. seller rating",
+    how_t:"How FabriTrade works", how1t:"Find & sample", how1:"Browse thousands of fabrics, order a swatch, and chat with AI translation.", how2t:"Pay safely", how2:"Your money is held in escrow. We take just 3.5% — the seller gets the rest.", how3t:"Receive & release", how3:"Confirm delivery, funds release to the seller, and you rate them. Done.",
+    foot_tag:"The AI-powered global fabric marketplace.", foot1:"🔒 Escrow-protected payments", foot2:"🛡️ AI-verified sellers", foot3:"🌐 3 languages · 24/7 AI support", foot_cr:"Demo build · © 2026 FabriTrade",
+    auth_welcome:"Welcome to FabriTrade", auth_sub:"Private email login — no Google, no third parties. Your account stays personal to you.", auth_login:"Log in", auth_signup:"Create account", auth_name:"Name / Company", auth_email:"Email", auth_pass:"Password", auth_role_q:"I mainly want to", auth_buyer:"Buy fabric", auth_seller:"Sell fabric", auth_have:"Already have an account? Log in", auth_new:"New here? Create an account", auth_go_login:"Log in", auth_go_signup:"Create my account", auth_err_fields:"Please fill in all fields.", auth_err_exists:"An account with that email already exists.", auth_err_login:"Wrong email or password.", auth_bad_email:"Please enter a valid email address.", auth_logout:"Log out", auth_hi:"Hi", auth_private:"🔒 Stored only on your device",
+    intro_skip:"Skip", intro_welcome_toast:"Welcome aboard",
+    intro0_t:"Welcome to FabriTrade 👋", intro0_s:"The world's fabric market, in your pocket. Ready to see why traders love it?", intro0_b:"Yes, show me",
+    intro1_t:"Want better fabric at better prices?", intro1_s:"Thousands of fabrics from mills worldwide, with bulk discounts and low-cost samples.", intro1_b:"Yes, I do",
+    intro2_t:"Want to trade safely with anyone, anywhere?", intro2_s:"Your money is protected in escrow, and our AI moderates every chat to stop scams before they happen.", intro2_b:"Absolutely",
+    intro3_t:"Want AI working for you 24/7?", intro3_s:"AI translates your chats, verifies companies, watches world news that moves prices, and guides every deal.", intro3_b:"Sounds great",
+    why_t:"You're in good hands 🛡️", why_s:"Here's why FabriTrade is strong and trustworthy:",
+    why1:"🔒 Every payment is protected by escrow — funds release only when you confirm delivery.",
+    why2:"🛡️ Sellers are AI-verified, and reviews come only from real, completed trades.",
+    why3:"🤖 An AI moderator guards every conversation and flags scams instantly.",
+    why4:"🌍 1,820+ traders across 50+ countries — in English, 中文 and Tiếng Việt.",
+    why5:"💸 Fair & simple: just a 3.5% fee, and you always see exactly where your money goes.",
+    why_cta:"Create my free account", why_login:"I already have an account",
+    nav_rfq:"RFQ Board", rfq_title:"RFQ Board — post what you need", rfq_sub:"Tell sellers what you're looking for and let them come to you with offers.",
+    rfq_post:"Post a request", rfq_f_title:"What do you need?", rfq_f_qty:"Quantity (m)", rfq_f_budget:"Max price /m (USD)", rfq_f_notes:"Notes (GSM, color, certifications…)", rfq_submit:"Post request", rfq_posted:"Request posted — sellers will send you offers.",
+    rfq_open:"Open requests", rfq_offers:"offers", rfq_send_offer:"Send offer", rfq_offer_sent:"Offer sent to the buyer.", rfq_your_price:"Your price per meter (USD)", rfq_no:"No requests yet — be the first to post one.", rfq_by:"by", rfq_budget:"Budget", rfq_qty:"Qty", rfq_ai_match:"✨ AI match",
+    ai_src:"✨ Let AI find sellers for me", ai_src_t:"AI Sourcing Agent", ai_src_s:"I matched this request with the best AI-verified sellers:", ai_src_msg:"Draft message (ready to send):", ai_src_none:"No exact match yet — I'll alert you the moment a matching fabric is listed.", ai_src_send:"Send to seller", ai_src_draft:"Hi! I'm looking for {qty} m of {title}, around {budget}/m. Could you send a quote and a sample first? Thank you!",
+    featured:"⭐ Featured", featured_row:"Featured fabrics", boost:"🚀 Boost", boost_t:"Boost this listing", boost_s:"Featured listings appear at the top of the marketplace and in the Featured row for 7 days.", boost_price:"Boost fee", boost_go:"Boost now", boosted:"Listing boosted — it's now featured!",
+    tg_next:"Next →", tg_back:"← Back", tg_skip:"Skip tour", tg_done:"Finish", tg_step:"Step", tg_of:"of", tg_restart:"Start the tour", nav_help:"Help",
+    tg1t:"Welcome to FabriTrade 👋", tg1:"This 1-minute tour walks you through the app while you watch it happen. You can skip anytime and restart it from the ❓ button.",
+    tg2t:"Browse the marketplace", tg2:"This is the home page. Use the search box and the filters on the left (type, origin, certification, MOQ, price) to find fabric. Featured fabrics show at the top, and you can sort by price or rating.",
+    tg3t:"The product page", tg3:"Here's a fabric's full details: composition, weight, width, certifications, and the seller's rating. On the right: bulk price breaks (buy more, pay less), Buy now, Add to cart, Order a sample swatch, and Contact seller.",
+    tg4t:"Cart & safe checkout", tg4:"Add several fabrics and pay at once. Your payment is held in escrow until you confirm delivery. FabriTrade keeps just 3.5% of each sale — the seller gets the rest.",
+    tg5t:"Sell your own fabric", tg5:"Anyone can sell. Fill in the product form, add a photo, and publish. Tap '✨ AI: auto-fill details' and the AI suggests composition, weight, and a fair price for you.",
+    tg6t:"Manage your listings", tg6:"Everything you've put up for sale lives here. Edit prices, delete items, or '🚀 Boost' a listing so it appears in the Featured row at the top of the marketplace.",
+    tg7t:"RFQ Board — let sellers come to you", tg7:"Post what you need (fabric, quantity, budget) and sellers send you offers. Or press '✨ Let AI find sellers for me' and the AI matches you with the best sellers and drafts your first message.",
+    tg8t:"Messages, translated & protected", tg8:"Chat directly with buyers and sellers. Turn on 'AI auto-translate' to read every message in your language. An AI moderator watches every chat and warns you if someone tries to move the deal off-platform.",
+    tg9t:"AI Price Watch", tg9:"The AI scans world news 24/7 — droughts, oil prices, shipping delays, tariffs — and tells you which fabric prices are about to rise or fall, so you can time your buying.",
+    tg10t:"Orders, tracking & your AI assistant", tg10:"Track every order: Paid → Preparing → Shipped → Delivered. And the ✨ AI Assistant button (bottom-right) is always there to find fabric, check a seller, or help with import/export.",
+    tg11t:"You're ready! 🎉", tg11:"That's the whole platform. Below are answers to common questions. Happy trading!",
+    help_t:"Help & FAQ", help_s:"Quick answers, and the guided tour whenever you need it.",
+    faq1q:"How do I pay, and is my money safe?", faq1a:"You pay inside FabriTrade and the money is held in escrow. It's only released to the seller after you confirm you received the goods. If something's wrong, open a dispute and the AI mediates.",
+    faq2q:"What does FabriTrade charge?", faq2a:"Nothing to join or list. On every completed sale, FabriTrade keeps 3.5% (taken from the seller's payout). Boosting a listing is an optional small fee.",
+    faq3q:"Can I sell if I signed up as a buyer?", faq3a:"Yes. Every account can buy and sell. Use the Buyer/Seller switch at the top to see the selling tools (Sell Fabric, My Listings, Dashboard).",
+    faq4q:"How does translation work?", faq4a:"Write in your own language. In Messages, switch on 'AI auto-translate' and each message shows a translation underneath, so both sides understand each other.",
+    faq5q:"How do I avoid scams?", faq5a:"Never pay outside FabriTrade. Keep chats and payments on the platform — the AI moderator flags anyone asking for bank wires, WhatsApp, or off-platform deals, and escrow protects your money.",
+    faq6q:"What is an RFQ?", faq6a:"A 'Request for Quote'. Instead of searching, you post what you need and sellers send you competing offers. The AI can also find matching sellers for you instantly.",
+  },
+  zh:{
+    nav_browse:"浏览", nav_messages:"消息", nav_sell:"出售面料", nav_orders:"我的订单", nav_dash:"店主后台",
+    role_buyer:"买家", role_seller:"卖家",
+    hero_t:"全球面料与纺织品交易平台",
+    hero_p:"在全球范围内买卖和交易面料——以越南为中心。直接联系供应商、订购样品并跨境运输。",
+    tag1:"越南出口现货", tag2:"设计师低起订量", tag3:"有机认证", tag4:"批发B2B价格",
+    search_ph:"搜索面料，例如：棉针织、牛仔、真丝……",
+    f_type:"面料类型", f_origin:"产地", f_cert:"认证", f_maxmoq:"最高起订量(米)", f_maxprice:"最高单价/米(美元)", f_all:"全部", f_clear:"清除筛选",
+    moq:"起订量", per_m:"/米", results:"个面料结果",
+    by:"卖家：", view:"查看详情",
+    back:"返回市场",
+    composition:"成分", weight:"克重", width:"幅宽", color:"颜色", cert:"认证", origin:"产地", lead:"交期", stock:"库存", incoterm:"运输条款", sample:"样品", days:"天", available:"可提供",
+    contact:"联系卖家", order_qty:"订购数量(米)", buy_now:"立即购买（安全托管）",
+    subtotal:"小计", you_pay:"您支付", comm_line:"从卖家扣除的平台费(3.5%)", seller_gets:"卖家实收",
+    comm_note:"<b>运作方式：</b>您的付款将由平台安全托管，直到您确认收货。FabriTrade 对每笔成交收取 <b>3.5% 佣金</b>——从卖家收款中扣除，绝不增加您的价格。",
+    seller_since:"AI 认证卖家", trades:"笔交易", rating:"评分",
+    chat_title:"消息", translate:"AI 自动翻译", type_msg:"输入消息……", send:"发送", no_thread:"请选择一个会话",
+    contacted:"已发送消息给卖家——正在打开聊天",
+    sell_title:"发布您的面料", sell_sub:"创建商品免费——FabriTrade 仅在您售出面料时收费。",
+    fld_title:"商品标题", fld_type:"面料类型", fld_comp:"成分", fld_gsm:"克重(GSM)", fld_width:"幅宽(厘米)", fld_price:"每米价格(美元)", fld_moq:"最低起订(米)", fld_origin:"产地(城市，国家)", fld_cert:"认证(可选)", fld_color:"主色", publish:"发布商品", listed_ok:"面料已发布！现已在市场上线。",
+    orders_title:"我的订单", ord_empty:"暂无订单。浏览市场下第一单吧。",
+    o_item:"商品", o_qty:"数量", o_total:"实付", o_status:"状态", o_date:"日期", st_escrow:"托管中", st_done:"已完成",
+    dash_title:"店主后台", dash_sub:"您从每笔交易 3.5% 佣金中获得的收入。",
+    d_gmv:"商品交易总额", d_comm:"您的佣金(3.5%)", d_orders:"已完成订单", d_users:"活跃用户", d_avail:"可提现金额",
+    recent:"最近交易", t_order:"订单", t_buyer:"买家", t_value:"交易额", t_comm:"您的费用", t_status:"状态",
+    confirm_buy:"确认您的订单", cancel:"取消", place:"下单并支付",
+    order_done:"下单成功！", order_done_p:"您的付款已安全托管。已通知卖家备货。",
+    great:"好的", switch_seller:"已切换到卖家视图", switch_buyer:"已切换到买家视图",
+    nav_fav:"收藏", nav_cart:"购物车",
+    add_cart:"加入购物车", in_cart:"已加入 ✓", added_cart:"已加入购物车", remove:"移除",
+    cart_title:"购物车", cart_empty:"购物车为空。去市场添加面料吧。", checkout:"结算 — 安全支付", items:"件",
+    fav_title:"收藏的面料", fav_empty:"暂无收藏。点击任意面料上的 ♥ 进行收藏。", saved_on:"已加入收藏", saved_off:"已取消收藏",
+    sort:"排序", sort_rel:"相关度", sort_pl:"价格：从低到高", sort_ph:"价格：从高到低", sort_rate:"评分最高", sort_moq:"起订量最低", sort_new:"最新",
+    sample_req:"申请样品", sample_sent:"样品申请已发送——卖家将回复运费。",
+    reviews:"买家评价", verified_purchase:"已验证购买",
+    currency:"货币", dark_on:"深色模式", dark_off:"浅色模式",
+    cart_comm:"平台费(3.5%，从卖家扣)", cart_pay:"您共支付",
+    qview:"快速查看",
+    fld_photo:"产品照片", photo_hint:"上传您自己的面料照片(JPG/PNG)。或跳过——我们将按类型使用素材图。", photo_choose:"选择照片", photo_added:"已添加照片", photo_remove:"移除照片",
+    nav_store:"我的商品", store_title:"我的商品", store_sub:"您上架出售的产品。顾客现在即可购买。", store_empty:"您还没有上架任何产品。", list_new:"＋ 上架产品", edit:"编辑", del:"删除", your_listing:"您的商品", deleted_ok:"商品已下架", saved_ok:"修改已保存", save_changes:"保存修改", live:"已上架", del_confirm:"确定下架此商品？",
+    trending:"热门推荐", recent_viewed:"最近浏览", related:"您可能还喜欢", more_seller:"该卖家的更多商品", visit_store:"进入店铺", seller_store:"店铺", products_word:"件商品",
+    notifs:"通知", no_notifs:"暂无通知", notif1:"南丰纺织发来新消息", notif2:"您的订单正在备货发货", notif3:"您收藏的面料已有货", mark_read:"全部已读", clear_data:"重置演示数据",
+    ai_open:"AI 助手", ai_title:"FabriTrade AI", ai_sub:"全天候协助买家与卖家", ai_ph:"向 AI 提问……", ai_send:"发送",
+    ai_cap_t:"✨ 由 AI 驱动 — 平台自主运行",
+    ai_cap1:"跨语言即时翻译，买卖双方无障碍沟通", ai_cap2:"7×24 客服与交易指导", ai_cap3:"AI 认证公司与欺诈检测", ai_cap4:"智能面料匹配与公允定价",
+    ai_chip1:"3.5% 佣金怎么算？", ai_chip2:"帮我找有机棉", ai_chip3:"这个卖家可靠吗？", ai_chip4:"进出口帮助",
+    nav_market:"AI 价格监测", market_title:"AI 价格监测", market_sub:"AI 全天候扫描全球新闻，预测事件对纺织品价格的影响。", mkt_up:"价格 ↑", mkt_down:"价格 ↓", mkt_affects:"影响", mkt_updated:"AI 刚刚更新",
+    ai_mod:"AI 审核员正在监看此对话，保护您免受诈骗", ai_mod_warn:"⚠️ AI 安全警报：这看起来像是要求线下付款或脱离平台交易。请将付款保留在 FabriTrade 托管中——脱离平台的交易不受保护，且是诈骗的首要信号。",
+    price_breaks:"批量阶梯价", tier_qty:"订购量", tier_price:"每米", best_price:"✓ 已应用最优价",
+    sample_order:"订购样布", sample_desc:"下大单前先拿小样检查质量。", sample_fee:"样品+运费", sample_confirm:"订购样品", sample_placed:"已订购样品——卖家将寄送样布给您。",
+    track_paid:"已付款", track_prep:"备货中", track_ship:"已发货", track_deliver:"已送达",
+    ai_fill:"✨ AI：自动填写详情", ai_filled:"AI 已填写建议详情——请查看并按需修改。",
+    tour_title:"欢迎来到 FabriTrade 👋", tour_body:"30 秒快速导览：", tour1:"🛍️ 浏览并购买全球卖家的面料。", tour2:"🏬 几秒钟上架您自己的面料。", tour3:"🛡️ 每个对话都有 AI 反诈审核保护。", tour4:"📈 AI 价格监测追踪影响价格的全球新闻。", tour_go:"开始探索", tour_skip:"以后再说",
+    sp_traders:"活跃交易者", sp_countries:"个国家", sp_gmv:"累计成交额", sp_rating:"平均卖家评分",
+    how_t:"FabriTrade 如何运作", how1t:"寻找与打样", how1:"浏览数千种面料，订购样布，并用 AI 翻译沟通。", how2t:"安全付款", how2:"款项托管，我们仅收 3.5%——其余归卖家。", how3t:"收货与放款", how3:"确认收货后放款给卖家，并为其评分。完成。",
+    foot_tag:"由 AI 驱动的全球面料交易平台。", foot1:"🔒 托管保护的付款", foot2:"🛡️ AI 认证卖家", foot3:"🌐 三种语言 · 全天候 AI 支持", foot_cr:"演示版本 · © 2026 FabriTrade",
+    auth_welcome:"欢迎来到 FabriTrade", auth_sub:"私密邮箱登录——不用谷歌，不涉第三方。您的账户完全私人。", auth_login:"登录", auth_signup:"创建账户", auth_name:"名称/公司", auth_email:"邮箱", auth_pass:"密码", auth_role_q:"我主要想", auth_buyer:"购买面料", auth_seller:"出售面料", auth_have:"已有账户？登录", auth_new:"新用户？创建账户", auth_go_login:"登录", auth_go_signup:"创建我的账户", auth_err_fields:"请填写所有字段。", auth_err_exists:"该邮箱已注册账户。", auth_err_login:"邮箱或密码错误。", auth_bad_email:"请输入有效的邮箱地址。", auth_logout:"退出登录", auth_hi:"你好", auth_private:"🔒 仅存储在您的设备上",
+    intro_skip:"跳过", intro_welcome_toast:"欢迎加入",
+    intro0_t:"欢迎来到 FabriTrade 👋", intro0_s:"把全球面料市场装进口袋。想知道交易者为何喜爱它吗？", intro0_b:"好，带我看看",
+    intro1_t:"想用更好的价格买到更好的面料？", intro1_s:"全球工厂的数千种面料，享批量折扣与低价样品。", intro1_b:"当然想",
+    intro2_t:"想与任何人、在任何地方安全交易？", intro2_s:"资金由托管保护，AI 审核每段对话，将骗局扼杀在发生之前。", intro2_b:"绝对要",
+    intro3_t:"想让 AI 全天候为你服务？", intro3_s:"AI 翻译对话、认证公司、追踪影响价格的全球新闻，并指导每笔交易。", intro3_b:"太棒了",
+    why_t:"您很安心 🛡️", why_s:"FabriTrade 为何强大又可信：",
+    why1:"🔒 每笔付款由托管保护——确认收货后才放款。",
+    why2:"🛡️ 卖家经 AI 认证，评价仅来自真实成交。",
+    why3:"🤖 AI 审核员守护每段对话，即时标记骗局。",
+    why4:"🌍 50+ 国家 1,820+ 交易者——支持英文、中文和越南文。",
+    why5:"💸 公平简单：仅收 3.5%，资金去向一目了然。",
+    why_cta:"创建我的免费账户", why_login:"我已有账户",
+    nav_rfq:"询价板", rfq_title:"询价板——发布您的需求", rfq_sub:"告诉卖家您想要什么，让他们主动向您报价。",
+    rfq_post:"发布需求", rfq_f_title:"您需要什么？", rfq_f_qty:"数量(米)", rfq_f_budget:"最高单价/米(美元)", rfq_f_notes:"备注(克重、颜色、认证……)", rfq_submit:"发布需求", rfq_posted:"需求已发布——卖家将向您报价。",
+    rfq_open:"进行中的需求", rfq_offers:"个报价", rfq_send_offer:"发送报价", rfq_offer_sent:"报价已发送给买家。", rfq_your_price:"您的每米价格(美元)", rfq_no:"暂无需求——来发布第一条吧。", rfq_by:"发布者", rfq_budget:"预算", rfq_qty:"数量", rfq_ai_match:"✨ AI 匹配",
+    ai_src:"✨ 让 AI 帮我找卖家", ai_src_t:"AI 采购助手", ai_src_s:"我已为此需求匹配到最佳 AI 认证卖家：", ai_src_msg:"消息草稿（可直接发送）：", ai_src_none:"暂无完全匹配——一有符合的面料上架我会立即提醒您。", ai_src_send:"发送给卖家", ai_src_draft:"您好！我想采购 {qty} 米 {title}，单价约 {budget}/米。能否先报价并寄样？谢谢！",
+    featured:"⭐ 精选", featured_row:"精选面料", boost:"🚀 推广", boost_t:"推广此商品", boost_s:"精选商品将在市场顶部和精选栏展示 7 天。", boost_price:"推广费用", boost_go:"立即推广", boosted:"商品已推广——现已成为精选！",
+    tg_next:"下一步 →", tg_back:"← 上一步", tg_skip:"跳过导览", tg_done:"完成", tg_step:"第", tg_of:"步，共", tg_restart:"开始导览", nav_help:"帮助",
+    tg1t:"欢迎来到 FabriTrade 👋", tg1:"这个 1 分钟导览会一边演示一边带您了解应用。您可以随时跳过，并通过 ❓ 按钮重新开始。",
+    tg2t:"浏览市场", tg2:"这是首页。使用搜索框和左侧筛选（类型、产地、认证、起订量、价格）查找面料。精选面料显示在顶部，还可按价格或评分排序。",
+    tg3t:"商品页面", tg3:"这里是面料的完整信息：成分、克重、幅宽、认证及卖家评分。右侧有批量阶梯价（买得越多越便宜）、立即购买、加入购物车、订购样布和联系卖家。",
+    tg4t:"购物车与安全结算", tg4:"添加多种面料一次付款。付款托管至您确认收货。FabriTrade 每笔仅收 3.5%——其余归卖家。",
+    tg5t:"出售您自己的面料", tg5:"任何人都能出售。填写商品表单、添加照片并发布。点击“✨ AI：自动填写详情”，AI 会为您建议成分、克重和公允价格。",
+    tg6t:"管理您的商品", tg6:"您上架的所有商品都在这里。编辑价格、删除商品，或“🚀 推广”商品使其出现在市场顶部的精选栏。",
+    tg7t:"询价板——让卖家主动找您", tg7:"发布您的需求（面料、数量、预算），卖家会向您报价。或点击“✨ 让 AI 帮我找卖家”，AI 会匹配最佳卖家并起草首条消息。",
+    tg8t:"消息：翻译且受保护", tg8:"与买卖双方直接聊天。开启“AI 自动翻译”即可用您的语言阅读每条消息。AI 审核员监看每段对话，若有人试图脱离平台交易会提醒您。",
+    tg9t:"AI 价格监测", tg9:"AI 全天候扫描全球新闻——干旱、油价、航运延误、关税——告诉您哪些面料价格将涨或跌，帮您把握采购时机。",
+    tg10t:"订单、追踪与 AI 助手", tg10:"追踪每笔订单：已付款 → 备货中 → 已发货 → 已送达。右下角的 ✨ AI 助手随时帮您找面料、核验卖家或处理进出口。",
+    tg11t:"您已准备好！🎉", tg11:"这就是整个平台。下面是常见问题的解答。交易愉快！",
+    help_t:"帮助与常见问题", help_s:"快速解答，随时可再次观看导览。",
+    faq1q:"如何付款？我的钱安全吗？", faq1a:"您在 FabriTrade 内付款，资金由托管保管。只有在您确认收货后才放款给卖家。若有问题，可发起纠纷由 AI 调解。",
+    faq2q:"FabriTrade 收费多少？", faq2a:"加入和上架免费。每笔成交 FabriTrade 收取 3.5%（从卖家收款中扣除）。推广商品是可选的小额费用。",
+    faq3q:"我以买家身份注册，还能出售吗？", faq3a:"可以。每个账户都能买卖。使用顶部的买家/卖家切换查看出售工具（出售面料、我的商品、后台）。",
+    faq4q:"翻译如何运作？", faq4a:"用您的语言书写。在消息中开启“AI 自动翻译”，每条消息下方会显示译文，双方都能理解。",
+    faq5q:"如何避免诈骗？", faq5a:"切勿在 FabriTrade 之外付款。聊天和付款都留在平台——AI 审核员会标记要求银行转账、WhatsApp 或私下交易的人，托管保护您的资金。",
+    faq6q:"什么是询价(RFQ)？", faq6a:"“询价请求”。无需搜索，发布您的需求，卖家会发来竞争报价。AI 也能即时为您找到匹配的卖家。",
+  },
+  vi:{
+    nav_browse:"Khám phá", nav_messages:"Tin nhắn", nav_sell:"Bán vải", nav_orders:"Đơn của tôi", nav_dash:"Bảng điều khiển chủ",
+    role_buyer:"Người mua", role_seller:"Người bán",
+    hero_t:"Sàn giao dịch vải & dệt may toàn cầu",
+    hero_p:"Mua, bán và trao đổi vải trên toàn thế giới — với Việt Nam làm trung tâm. Trò chuyện trực tiếp với nhà cung cấp, đặt mẫu và vận chuyển xuyên biên giới.",
+    tag1:"Sẵn sàng xuất khẩu từ Việt Nam", tag2:"MOQ thấp cho nhà thiết kế", tag3:"Chứng nhận hữu cơ", tag4:"Giá sỉ B2B",
+    search_ph:"Tìm vải, ví dụ: cotton jersey, denim, lụa…",
+    f_type:"Loại vải", f_origin:"Xuất xứ", f_cert:"Chứng nhận", f_maxmoq:"MOQ tối đa (m)", f_maxprice:"Giá tối đa /m (USD)", f_all:"Tất cả", f_clear:"Xóa bộ lọc",
+    moq:"MOQ", per_m:"/m", results:"loại vải",
+    by:"bởi", view:"Xem chi tiết",
+    back:"Về sàn giao dịch",
+    composition:"Thành phần", weight:"Định lượng", width:"Khổ vải", color:"Màu sắc", cert:"Chứng nhận", origin:"Xuất xứ", lead:"Thời gian giao", stock:"Tồn kho", incoterm:"Điều kiện giao hàng", sample:"Mẫu", days:"ngày", available:"Có sẵn",
+    contact:"Liên hệ người bán", order_qty:"Số lượng đặt (m)", buy_now:"Mua ngay (ký quỹ an toàn)",
+    subtotal:"Tạm tính", you_pay:"Bạn trả", comm_line:"Phí nền tảng trừ từ người bán (3,5%)", seller_gets:"Người bán nhận",
+    comm_note:"<b>Cách hoạt động:</b> Khoản thanh toán được giữ ký quỹ an toàn cho đến khi bạn xác nhận nhận hàng. FabriTrade thu <b>hoa hồng 3,5%</b> trên mỗi giao dịch hoàn tất — trừ vào tiền của người bán, không cộng thêm vào giá của bạn.",
+    seller_since:"Người bán được AI xác minh", trades:"giao dịch", rating:"đánh giá",
+    chat_title:"Tin nhắn", translate:"AI tự động dịch", type_msg:"Nhập tin nhắn…", send:"Gửi", no_thread:"Chọn một cuộc trò chuyện",
+    contacted:"Đã gửi tin nhắn cho người bán — đang mở trò chuyện",
+    sell_title:"Đăng bán vải của bạn", sell_sub:"Tạo tin đăng miễn phí — FabriTrade chỉ thu phí khi vải của bạn được bán.",
+    fld_title:"Tiêu đề tin đăng", fld_type:"Loại vải", fld_comp:"Thành phần", fld_gsm:"Định lượng (GSM)", fld_width:"Khổ vải (cm)", fld_price:"Giá mỗi mét (USD)", fld_moq:"Đặt tối thiểu (m)", fld_origin:"Xuất xứ (thành phố, quốc gia)", fld_cert:"Chứng nhận (tùy chọn)", fld_color:"Màu chính", publish:"Đăng tin", listed_ok:"Đã đăng vải! Hiện đã hiển thị trên sàn.",
+    orders_title:"Đơn của tôi", ord_empty:"Chưa có đơn nào. Khám phá sàn để đặt đơn đầu tiên.",
+    o_item:"Mặt hàng", o_qty:"SL", o_total:"Đã trả", o_status:"Trạng thái", o_date:"Ngày", st_escrow:"Đang ký quỹ", st_done:"Hoàn tất",
+    dash_title:"Bảng điều khiển chủ sàn", dash_sub:"Doanh thu của bạn từ hoa hồng 3,5% trên mỗi giao dịch.",
+    d_gmv:"Tổng giá trị giao dịch", d_comm:"Hoa hồng của bạn (3,5%)", d_orders:"Đơn hoàn tất", d_users:"Người dùng hoạt động", d_avail:"Có thể rút",
+    recent:"Giao dịch gần đây", t_order:"Đơn", t_buyer:"Người mua", t_value:"Giá trị", t_comm:"Phí của bạn", t_status:"Trạng thái",
+    confirm_buy:"Xác nhận đơn hàng", cancel:"Hủy", place:"Đặt hàng & thanh toán",
+    order_done:"Đã đặt hàng!", order_done_p:"Khoản thanh toán đã được giữ ký quỹ an toàn. Người bán đã được thông báo để chuẩn bị vải.",
+    great:"Tuyệt", switch_seller:"Đã chuyển sang chế độ Người bán", switch_buyer:"Đã chuyển sang chế độ Người mua",
+    nav_fav:"Đã lưu", nav_cart:"Giỏ hàng",
+    add_cart:"Thêm vào giỏ", in_cart:"Đã thêm ✓", added_cart:"Đã thêm vào giỏ", remove:"Xóa",
+    cart_title:"Giỏ hàng", cart_empty:"Giỏ hàng trống. Khám phá sàn để thêm vải.", checkout:"Thanh toán — an toàn", items:"mặt hàng",
+    fav_title:"Vải đã lưu", fav_empty:"Chưa có vải đã lưu. Nhấn ♥ trên bất kỳ loại vải nào để lưu.", saved_on:"Đã lưu vào danh sách", saved_off:"Đã bỏ lưu",
+    sort:"Sắp xếp", sort_rel:"Liên quan", sort_pl:"Giá: thấp đến cao", sort_ph:"Giá: cao đến thấp", sort_rate:"Đánh giá cao nhất", sort_moq:"MOQ thấp nhất", sort_new:"Mới nhất",
+    sample_req:"Yêu cầu mẫu", sample_sent:"Đã gửi yêu cầu mẫu — người bán sẽ trả lời kèm phí vận chuyển.",
+    reviews:"Đánh giá của người mua", verified_purchase:"Mua hàng đã xác minh",
+    currency:"Tiền tệ", dark_on:"Chế độ tối", dark_off:"Chế độ sáng",
+    cart_comm:"Phí nền tảng (3,5%, từ người bán)", cart_pay:"Tổng bạn trả",
+    qview:"Xem nhanh",
+    fld_photo:"Ảnh sản phẩm", photo_hint:"Tải lên ảnh vải của bạn (JPG/PNG). Hoặc bỏ qua — chúng tôi sẽ dùng ảnh mẫu theo loại.", photo_choose:"Chọn ảnh", photo_added:"Đã thêm ảnh", photo_remove:"Xóa ảnh",
+    nav_store:"Sản phẩm của tôi", store_title:"Sản phẩm của tôi", store_sub:"Sản phẩm bạn đang rao bán. Khách hàng có thể mua ngay.", store_empty:"Bạn chưa đăng bán sản phẩm nào.", list_new:"＋ Đăng bán sản phẩm", edit:"Sửa", del:"Xóa", your_listing:"Sản phẩm của bạn", deleted_ok:"Đã gỡ sản phẩm", saved_ok:"Đã lưu thay đổi", save_changes:"Lưu thay đổi", live:"Đang bán", del_confirm:"Gỡ sản phẩm này?",
+    trending:"Đang thịnh hành", recent_viewed:"Đã xem gần đây", related:"Có thể bạn cũng thích", more_seller:"Thêm từ người bán này", visit_store:"Ghé cửa hàng", seller_store:"Cửa hàng", products_word:"sản phẩm",
+    notifs:"Thông báo", no_notifs:"Không có thông báo", notif1:"Tin nhắn mới từ Nam Phong Textiles", notif2:"Đơn hàng của bạn đang được chuẩn bị giao", notif3:"Vải bạn đã lưu hiện đã có hàng", mark_read:"Đánh dấu đã đọc", clear_data:"Đặt lại dữ liệu demo",
+    ai_open:"Trợ lý AI", ai_title:"FabriTrade AI", ai_sub:"Hỗ trợ người mua & bán 24/7", ai_ph:"Hỏi AI bất cứ điều gì…", ai_send:"Gửi",
+    ai_cap_t:"✨ Vận hành bởi AI — nền tảng tự vận hành",
+    ai_cap1:"Dịch tức thì giữa các nhà giao dịch mọi ngôn ngữ", ai_cap2:"Hỗ trợ & hướng dẫn giao dịch 24/7", ai_cap3:"Xác minh công ty & phát hiện gian lận bằng AI", ai_cap4:"Khớp vải thông minh & gợi ý giá hợp lý",
+    ai_chip1:"Phí 3,5% hoạt động thế nào?", ai_chip2:"Tìm cotton hữu cơ cho tôi", ai_chip3:"Người bán này có đáng tin?", ai_chip4:"Trợ giúp xuất nhập khẩu",
+    nav_market:"Theo dõi giá AI", market_title:"Theo dõi giá bằng AI", market_sub:"AI quét tin tức thế giới 24/7 và dự đoán tác động của sự kiện đến giá dệt may.", mkt_up:"Giá ↑", mkt_down:"Giá ↓", mkt_affects:"Ảnh hưởng", mkt_updated:"AI vừa cập nhật",
+    ai_mod:"Người kiểm duyệt AI đang theo dõi để bảo vệ bạn khỏi lừa đảo", ai_mod_warn:"⚠️ Cảnh báo an toàn AI: Đây có vẻ là yêu cầu thanh toán hoặc chuyển giao dịch ra ngoài nền tảng. Hãy giữ thanh toán trong ký quỹ FabriTrade — giao dịch ngoài nền tảng không được bảo vệ và là dấu hiệu lừa đảo hàng đầu.",
+    price_breaks:"Giá theo số lượng", tier_qty:"Số lượng", tier_price:"Mỗi mét", best_price:"✓ đã áp giá tốt nhất",
+    sample_order:"Đặt mẫu vải", sample_desc:"Nhận mảnh nhỏ để kiểm tra chất lượng trước khi đặt lớn.", sample_fee:"Mẫu + vận chuyển", sample_confirm:"Đặt mẫu", sample_placed:"Đã đặt mẫu — người bán sẽ gửi mảnh vải mẫu cho bạn.",
+    track_paid:"Đã thanh toán", track_prep:"Đang chuẩn bị", track_ship:"Đã gửi", track_deliver:"Đã giao",
+    ai_fill:"✨ AI: tự điền chi tiết", ai_filled:"AI đã điền gợi ý — hãy xem và chỉnh sửa tùy ý.",
+    tour_title:"Chào mừng đến FabriTrade 👋", tour_body:"Giới thiệu nhanh 30 giây:", tour1:"🛍️ Duyệt & mua vải từ người bán toàn cầu.", tour2:"🏬 Đăng bán vải của bạn trong vài giây.", tour3:"🛡️ Mọi cuộc trò chuyện được AI chống lừa đảo bảo vệ.", tour4:"📈 Theo dõi giá AI bám tin tức ảnh hưởng giá.", tour_go:"Bắt đầu khám phá", tour_skip:"Để sau",
+    sp_traders:"nhà giao dịch", sp_countries:"quốc gia", sp_gmv:"đã giao dịch", sp_rating:"đánh giá TB người bán",
+    how_t:"FabriTrade hoạt động thế nào", how1t:"Tìm & lấy mẫu", how1:"Duyệt hàng nghìn loại vải, đặt mẫu và trò chuyện với AI dịch.", how2t:"Thanh toán an toàn", how2:"Tiền được giữ ký quỹ. Chúng tôi chỉ thu 3,5% — phần còn lại thuộc người bán.", how3t:"Nhận & giải ngân", how3:"Xác nhận nhận hàng, tiền chuyển cho người bán, và bạn đánh giá họ. Xong.",
+    foot_tag:"Sàn giao dịch vải toàn cầu vận hành bằng AI.", foot1:"🔒 Thanh toán bảo vệ bằng ký quỹ", foot2:"🛡️ Người bán được AI xác minh", foot3:"🌐 3 ngôn ngữ · Hỗ trợ AI 24/7", foot_cr:"Bản demo · © 2026 FabriTrade",
+    auth_welcome:"Chào mừng đến FabriTrade", auth_sub:"Đăng nhập email riêng tư — không Google, không bên thứ ba. Tài khoản của bạn hoàn toàn cá nhân.", auth_login:"Đăng nhập", auth_signup:"Tạo tài khoản", auth_name:"Tên / Công ty", auth_email:"Email", auth_pass:"Mật khẩu", auth_role_q:"Tôi chủ yếu muốn", auth_buyer:"Mua vải", auth_seller:"Bán vải", auth_have:"Đã có tài khoản? Đăng nhập", auth_new:"Mới ở đây? Tạo tài khoản", auth_go_login:"Đăng nhập", auth_go_signup:"Tạo tài khoản của tôi", auth_err_fields:"Vui lòng điền tất cả các ô.", auth_err_exists:"Email này đã có tài khoản.", auth_err_login:"Sai email hoặc mật khẩu.", auth_bad_email:"Vui lòng nhập email hợp lệ.", auth_logout:"Đăng xuất", auth_hi:"Chào", auth_private:"🔒 Chỉ lưu trên thiết bị của bạn",
+    intro_skip:"Bỏ qua", intro_welcome_toast:"Chào mừng bạn",
+    intro0_t:"Chào mừng đến FabriTrade 👋", intro0_s:"Chợ vải toàn cầu, ngay trong túi bạn. Sẵn sàng xem vì sao nhà giao dịch yêu thích nó?", intro0_b:"Vâng, cho tôi xem",
+    intro1_t:"Muốn vải tốt hơn với giá tốt hơn?", intro1_s:"Hàng nghìn loại vải từ nhà máy khắp thế giới, giảm giá theo số lượng và mẫu giá rẻ.", intro1_b:"Có, tôi muốn",
+    intro2_t:"Muốn giao dịch an toàn với bất kỳ ai, bất cứ đâu?", intro2_s:"Tiền được bảo vệ bằng ký quỹ, và AI kiểm duyệt mọi cuộc trò chuyện để chặn lừa đảo.", intro2_b:"Chắc chắn rồi",
+    intro3_t:"Muốn AI làm việc cho bạn 24/7?", intro3_s:"AI dịch trò chuyện, xác minh công ty, theo dõi tin tức ảnh hưởng giá và hướng dẫn mọi giao dịch.", intro3_b:"Tuyệt vời",
+    why_t:"Bạn được an tâm 🛡️", why_s:"Vì sao FabriTrade mạnh mẽ và đáng tin:",
+    why1:"🔒 Mọi khoản thanh toán được ký quỹ bảo vệ — chỉ giải ngân khi bạn xác nhận nhận hàng.",
+    why2:"🛡️ Người bán được AI xác minh, đánh giá chỉ từ giao dịch thật đã hoàn tất.",
+    why3:"🤖 Người kiểm duyệt AI bảo vệ mọi cuộc trò chuyện và cảnh báo lừa đảo tức thì.",
+    why4:"🌍 1.820+ nhà giao dịch tại 50+ quốc gia — bằng English, 中文 và Tiếng Việt.",
+    why5:"💸 Công bằng & đơn giản: chỉ phí 3,5%, bạn luôn thấy rõ tiền đi đâu.",
+    why_cta:"Tạo tài khoản miễn phí", why_login:"Tôi đã có tài khoản",
+    nav_rfq:"Bảng yêu cầu báo giá", rfq_title:"Bảng RFQ — đăng thứ bạn cần", rfq_sub:"Cho người bán biết bạn tìm gì và để họ chủ động gửi báo giá.",
+    rfq_post:"Đăng yêu cầu", rfq_f_title:"Bạn cần gì?", rfq_f_qty:"Số lượng (m)", rfq_f_budget:"Giá tối đa /m (USD)", rfq_f_notes:"Ghi chú (GSM, màu, chứng nhận…)", rfq_submit:"Đăng yêu cầu", rfq_posted:"Đã đăng — người bán sẽ gửi báo giá cho bạn.",
+    rfq_open:"Yêu cầu đang mở", rfq_offers:"báo giá", rfq_send_offer:"Gửi báo giá", rfq_offer_sent:"Đã gửi báo giá cho người mua.", rfq_your_price:"Giá của bạn mỗi mét (USD)", rfq_no:"Chưa có yêu cầu — hãy là người đầu tiên.", rfq_by:"bởi", rfq_budget:"Ngân sách", rfq_qty:"SL", rfq_ai_match:"✨ AI khớp",
+    ai_src:"✨ Để AI tìm người bán cho tôi", ai_src_t:"Trợ lý tìm nguồn AI", ai_src_s:"Tôi đã khớp yêu cầu này với người bán được AI xác minh tốt nhất:", ai_src_msg:"Tin nhắn soạn sẵn (gửi ngay):", ai_src_none:"Chưa có khớp chính xác — tôi sẽ báo ngay khi có vải phù hợp.", ai_src_send:"Gửi cho người bán", ai_src_draft:"Chào! Tôi cần {qty} m {title}, khoảng {budget}/m. Bạn có thể báo giá và gửi mẫu trước không? Cảm ơn!",
+    featured:"⭐ Nổi bật", featured_row:"Vải nổi bật", boost:"🚀 Đẩy tin", boost_t:"Đẩy tin đăng này", boost_s:"Tin nổi bật xuất hiện đầu sàn và trong hàng Nổi bật trong 7 ngày.", boost_price:"Phí đẩy tin", boost_go:"Đẩy ngay", boosted:"Đã đẩy tin — giờ là tin nổi bật!",
+    tg_next:"Tiếp →", tg_back:"← Quay lại", tg_skip:"Bỏ qua", tg_done:"Hoàn tất", tg_step:"Bước", tg_of:"/", tg_restart:"Bắt đầu hướng dẫn", nav_help:"Trợ giúp",
+    tg1t:"Chào mừng đến FabriTrade 👋", tg1:"Hướng dẫn 1 phút này đưa bạn đi qua ứng dụng khi bạn xem trực tiếp. Bạn có thể bỏ qua bất cứ lúc nào và mở lại từ nút ❓.",
+    tg2t:"Khám phá sàn", tg2:"Đây là trang chủ. Dùng ô tìm kiếm và bộ lọc bên trái (loại, xuất xứ, chứng nhận, MOQ, giá) để tìm vải. Vải nổi bật ở trên cùng, có thể sắp xếp theo giá hoặc đánh giá.",
+    tg3t:"Trang sản phẩm", tg3:"Chi tiết đầy đủ của vải: thành phần, định lượng, khổ, chứng nhận và đánh giá người bán. Bên phải: giá theo số lượng (mua nhiều rẻ hơn), Mua ngay, Thêm vào giỏ, Đặt mẫu và Liên hệ người bán.",
+    tg4t:"Giỏ hàng & thanh toán an toàn", tg4:"Thêm nhiều loại vải và thanh toán một lần. Tiền được giữ ký quỹ đến khi bạn xác nhận nhận hàng. FabriTrade chỉ giữ 3,5% mỗi giao dịch — người bán nhận phần còn lại.",
+    tg5t:"Bán vải của bạn", tg5:"Ai cũng có thể bán. Điền biểu mẫu, thêm ảnh và đăng. Nhấn '✨ AI: tự điền chi tiết' để AI gợi ý thành phần, định lượng và giá hợp lý.",
+    tg6t:"Quản lý tin đăng", tg6:"Mọi thứ bạn đang bán ở đây. Sửa giá, xóa, hoặc '🚀 Đẩy tin' để xuất hiện trong hàng Nổi bật đầu sàn.",
+    tg7t:"Bảng RFQ — để người bán tìm bạn", tg7:"Đăng thứ bạn cần (vải, số lượng, ngân sách) và người bán gửi báo giá. Hoặc nhấn '✨ Để AI tìm người bán cho tôi' để AI khớp người bán tốt nhất và soạn tin đầu tiên.",
+    tg8t:"Tin nhắn: có dịch & được bảo vệ", tg8:"Trò chuyện trực tiếp với người mua/bán. Bật 'AI tự động dịch' để đọc mọi tin bằng ngôn ngữ của bạn. AI kiểm duyệt theo dõi mọi cuộc trò chuyện và cảnh báo nếu ai đó muốn giao dịch ngoài nền tảng.",
+    tg9t:"Theo dõi giá AI", tg9:"AI quét tin tức thế giới 24/7 — hạn hán, giá dầu, chậm vận chuyển, thuế — và cho bạn biết giá vải nào sắp tăng hay giảm để canh thời điểm mua.",
+    tg10t:"Đơn hàng, theo dõi & trợ lý AI", tg10:"Theo dõi mọi đơn: Đã thanh toán → Đang chuẩn bị → Đã gửi → Đã giao. Nút ✨ Trợ lý AI (góc dưới phải) luôn sẵn sàng tìm vải, kiểm tra người bán hoặc hỗ trợ xuất nhập khẩu.",
+    tg11t:"Bạn đã sẵn sàng! 🎉", tg11:"Đó là toàn bộ nền tảng. Bên dưới là giải đáp các câu hỏi thường gặp. Chúc giao dịch vui!",
+    help_t:"Trợ giúp & Câu hỏi thường gặp", help_s:"Giải đáp nhanh, và hướng dẫn có sẵn bất cứ khi nào bạn cần.",
+    faq1q:"Tôi thanh toán thế nào, tiền có an toàn không?", faq1a:"Bạn thanh toán trong FabriTrade và tiền được giữ ký quỹ. Chỉ giải ngân cho người bán sau khi bạn xác nhận đã nhận hàng. Nếu có vấn đề, mở tranh chấp và AI sẽ hòa giải.",
+    faq2q:"FabriTrade thu phí gì?", faq2a:"Tham gia và đăng tin miễn phí. Mỗi giao dịch hoàn tất, FabriTrade giữ 3,5% (trừ từ tiền người bán). Đẩy tin là phí nhỏ tùy chọn.",
+    faq3q:"Đăng ký là người mua thì có bán được không?", faq3a:"Có. Mọi tài khoản đều mua và bán được. Dùng nút chuyển Người mua/Người bán ở trên để thấy công cụ bán (Bán vải, Sản phẩm của tôi, Bảng điều khiển).",
+    faq4q:"Dịch hoạt động thế nào?", faq4a:"Viết bằng ngôn ngữ của bạn. Trong Tin nhắn, bật 'AI tự động dịch' và mỗi tin sẽ có bản dịch bên dưới để hai bên hiểu nhau.",
+    faq5q:"Làm sao tránh lừa đảo?", faq5a:"Không bao giờ thanh toán ngoài FabriTrade. Giữ trò chuyện và thanh toán trên nền tảng — AI kiểm duyệt cảnh báo ai yêu cầu chuyển khoản, WhatsApp hay giao dịch ngoài, và ký quỹ bảo vệ tiền của bạn.",
+    faq6q:"RFQ là gì?", faq6a:"'Yêu cầu báo giá'. Thay vì tìm kiếm, bạn đăng nhu cầu và người bán gửi báo giá cạnh tranh. AI cũng có thể tìm ngay người bán phù hợp cho bạn.",
+  }
+};
+
+/* ============ data ============ */
+const COMMISSION = 0.035;
+const FABRIC_TYPES = ["Cotton","Polyester","Silk","Linen","Denim","Wool","Blend","Knit"];
+function sw(a,b){return `linear-gradient(135deg,${a},${b})`}
+// keyword-based photo (loremflickr); lock keeps each listing's image stable
+function pic(tags,lock){return `https://loremflickr.com/600/450/${tags}?lock=${lock}`}
+// fallback photo per fabric type for user-created listings
+function picByType(type,lock){const map={Cotton:"cotton,fabric",Polyester:"polyester,fabric",Silk:"silk,fabric",Linen:"linen,fabric",Denim:"denim,jeans",Wool:"wool,fabric",Blend:"textile,fabric",Knit:"knit,fabric"};return pic(map[type]||"textile,fabric",lock)}
+let LISTINGS = [
+  {id:1, title:{en:"Combed Cotton Jersey 180 GSM",zh:"精梳棉针织布 180克",vi:"Vải cotton chải kỹ 180 GSM"}, type:"Cotton", comp:"100% Cotton", gsm:180, width:180, price:3.2, moq:50, origin:{en:"Nam Định, Vietnam",zh:"越南南定",vi:"Nam Định, Việt Nam"}, cert:"OEKO-TEX", color:"#e8e2d4", seller:{n:"Nam Phong Textiles",r:4.8,t:312}, lead:7, stock:"12,000 m", inco:"FOB", grad:sw("#efe9dc","#cfc6ad"), img:pic("cotton,fabric",101), featured:true},
+  {id:2, title:{en:"Stretch Denim 12oz Indigo",zh:"弹力牛仔布 12安士 靛蓝",vi:"Vải denim co giãn 12oz chàm"}, type:"Denim", comp:"98% Cotton 2% Spandex", gsm:340, width:150, price:5.6, moq:200, origin:{en:"Foshan, China",zh:"中国佛山",vi:"Phật Sơn, Trung Quốc"}, cert:"", color:"#33415c", seller:{n:"Pearl River Denim Co.",r:4.6,t:540}, lead:14, stock:"30,000 m", inco:"CIF", grad:sw("#3a4a66","#1f2a44"), img:pic("denim,jeans",102)},
+  {id:3, title:{en:"Mulberry Silk Charmeuse 19mm",zh:"桑蚕丝缎 19姆米",vi:"Lụa tơ tằm charmeuse 19mm"}, type:"Silk", comp:"100% Mulberry Silk", gsm:88, width:114, price:18.5, moq:20, origin:{en:"Hangzhou, China",zh:"中国杭州",vi:"Hàng Châu, Trung Quốc"}, cert:"OEKO-TEX", color:"#d8b08c", seller:{n:"Silk Road Mills",r:4.9,t:198}, lead:10, stock:"4,500 m", inco:"FOB", grad:sw("#e4c5a3","#c98f63"), img:pic("silk,fabric",103), featured:true},
+  {id:4, title:{en:"Washed Linen 165 GSM Natural",zh:"水洗亚麻 165克 本色",vi:"Vải lanh giặt 165 GSM màu tự nhiên"}, type:"Linen", comp:"100% Linen", gsm:165, width:140, price:7.8, moq:30, origin:{en:"Hai Duong, Vietnam",zh:"越南海阳",vi:"Hải Dương, Việt Nam"}, cert:"GOTS", color:"#cdbfa6", seller:{n:"My Mill (You)",r:4.7,t:121}, lead:9, stock:"8,000 m", inco:"FOB", grad:sw("#d6c9b0","#b3a384"), img:pic("linen,fabric",104), mine:true},
+  {id:5, title:{en:"Recycled Poly Fleece 280 GSM",zh:"再生聚酯抓绒 280克",vi:"Vải nỉ poly tái chế 280 GSM"}, type:"Polyester", comp:"100% Recycled Polyester", gsm:280, width:165, price:4.1, moq:100, origin:{en:"Binh Duong, Vietnam",zh:"越南平阳",vi:"Bình Dương, Việt Nam"}, cert:"GRS", color:"#6b7c93", seller:{n:"GreenLoop Fabrics",r:4.5,t:87}, lead:12, stock:"20,000 m", inco:"FOB", grad:sw("#7a8aa0","#56657d"), img:pic("fleece,fabric",105)},
+  {id:6, title:{en:"Merino Wool Suiting 250 GSM",zh:"美利奴羊毛西装料 250克",vi:"Vải len merino may vest 250 GSM"}, type:"Wool", comp:"100% Merino Wool", gsm:250, width:150, price:22.0, moq:40, origin:{en:"Suzhou, China",zh:"中国苏州",vi:"Tô Châu, Trung Quốc"}, cert:"", color:"#4a4640", seller:{n:"Jiangnan Worsted",r:4.8,t:265}, lead:18, stock:"6,200 m", inco:"CIF", grad:sw("#5a554d","#33302b"), img:pic("wool,fabric",106)},
+  {id:7, title:{en:"Cotton Poplin Shirting 120 GSM",zh:"全棉府绸衬衫料 120克",vi:"Vải poplin cotton may áo 120 GSM"}, type:"Cotton", comp:"100% Cotton", gsm:120, width:145, price:2.9, moq:50, origin:{en:"Thai Binh, Vietnam",zh:"越南太平",vi:"Thái Bình, Việt Nam"}, cert:"OEKO-TEX", color:"#dfe7ee", seller:{n:"Nam Phong Textiles",r:4.8,t:312}, lead:7, stock:"15,000 m", inco:"FOB", grad:sw("#e6edf3","#c3d0db"), img:pic("cotton,shirt,textile",107)},
+  {id:8, title:{en:"Rib Knit Cuffing 2x2 320 GSM",zh:"罗纹螺纹布 2x2 320克",vi:"Vải bo gân 2x2 320 GSM"}, type:"Knit", comp:"95% Cotton 5% Spandex", gsm:320, width:100, price:4.8, moq:25, origin:{en:"Guangzhou, China",zh:"中国广州",vi:"Quảng Châu, Trung Quốc"}, cert:"", color:"#7a4b52", seller:{n:"Pearl River Denim Co.",r:4.6,t:540}, lead:8, stock:"5,000 m", inco:"FOB", grad:sw("#8a5760","#5e373d"), img:pic("knit,fabric",108)},
+];
+
+const THREADS = [
+  {id:1, sellerId:1, name:"Nam Phong Textiles", msgs:[
+    {me:false, t:"Xin chào! Cảm ơn bạn đã quan tâm đến vải cotton của chúng tôi.", tr:"Hello! Thank you for your interest in our cotton fabric."},
+    {me:true, t:"Hi! Can you do 2,000 meters with OEKO-TEX certificate?", tr:"Chào! Bạn có thể làm 2.000 mét kèm chứng chỉ OEKO-TEX không?"},
+    {me:false, t:"Tất nhiên rồi. Giá FOB Hải Phòng là $3.10/m cho số lượng này.", tr:"Of course. FOB Hai Phong price is $3.10/m for this quantity."},
+  ]},
+  {id:2, sellerId:3, name:"Silk Road Mills", msgs:[
+    {me:false, t:"您好，真丝缎库存充足，需要寄样品吗？", tr:"Hello, the silk charmeuse is in stock. Would you like samples?"},
+  ]},
+  {id:3, sellerId:2, name:"⚠️ Unknown Trader", msgs:[
+    {me:false, t:"To save the 3.5% fee, let's deal off-platform — send a bank wire to my account and I'll ship faster.", tr:"为省下 3.5% 手续费，我们私下交易吧——直接银行转账到我账户，我会更快发货。"},
+    {ai:true},
+  ]},
+];
+
+/* ============ currency ============ */
+const CUR = {
+  USD:{sym:"$", rate:1, dp:2, post:false},
+  VND:{sym:"₫", rate:25400, dp:0, post:true},
+  CNY:{sym:"¥", rate:7.2, dp:2, post:false},
+};
+
+/* ============ reviews ============ */
+const REVIEWS = [
+  {n:"Lemaire Studio", c:"FR", r:5, txt:{en:"Excellent hand-feel, exactly as described. Will reorder.",zh:"手感极佳，与描述完全一致，会再次下单。",vi:"Chất vải tuyệt vời, đúng như mô tả. Sẽ đặt lại."}},
+  {n:"HCMC Tailor", c:"VN", r:5, txt:{en:"Fast sample, smooth communication in Vietnamese. Great seller.",zh:"样品很快，越南语沟通顺畅，卖家很棒。",vi:"Mẫu nhanh, trao đổi tiếng Việt thuận lợi. Người bán tuyệt."}},
+  {n:"Etsy Maker", c:"US", r:4, txt:{en:"Good quality for the price. Shipping took a little longer.",zh:"性价比不错，物流稍慢一点。",vi:"Chất lượng tốt so với giá. Giao hàng hơi lâu một chút."}},
+];
+
+/* ============ state ============ */
+let state = { lang:"en", cur:"USD", dark:false, view:"browse", role:"buyer", detailId:null, threadId:1, translate:true,
+  filters:{type:"",origin:"",cert:"",maxmoq:"",maxprice:""}, search:"", sort:"rel", qty:{},
+  cart:[], fav:[], orders:[], recent:[], sellerView:null, uploadImg:null, editId:null, dash:{gmv:284500, comm:9957.5, orders:146, users:1820},
+  user:null, authMode:"login", authRole:"buyer", authErr:"",
+  rfqs:[
+    {id:1,title:"Organic cotton jersey 180 GSM",type:"Cotton",qty:2000,budget:3.5,notes:"GOTS preferred, white",by:"Lemaire Studio (FR)",offers:[{seller:"Nam Phong Textiles",price:3.2},{seller:"GreenLoop Fabrics",price:3.4}]},
+    {id:2,title:"Stretch denim 12oz indigo",type:"Denim",qty:5000,budget:5.0,notes:"150 cm width, 2% spandex",by:"Zara Vendor (ES)",offers:[{seller:"Pearl River Denim Co.",price:4.9}]},
+    {id:3,title:"Mulberry silk charmeuse",type:"Silk",qty:300,budget:19,notes:"19mm, ivory, OEKO-TEX",by:"Independent Designer (US)",offers:[]},
+  ], aiSrc:null };
+
+/* ============ private email account (no Google, local-only) ============ */
+function loadUsers(){ try{return JSON.parse(localStorage.getItem("ft_users")||"[]");}catch(e){return [];} }
+function saveUsers(u){ try{localStorage.setItem("ft_users",JSON.stringify(u));}catch(e){} }
+function hashPw(p){ try{return btoa(unescape(encodeURIComponent("ft·"+p)));}catch(e){return "ft"+p;} }
+/* ============ welcome intro (foot-in-the-door) ============ */
+function showIntro(){ state.introStep=0; document.body.classList.add("auth"); renderIntro(); }
+function renderIntro(){
+  const s=state.introStep||0;
+  const dots=[0,1,2,3,4].map(i=>`<i class="${i===s?'on':''}"></i>`).join("");
+  let inner;
+  if(s>=4){
+    const ws=[t("why1"),t("why2"),t("why3"),t("why4"),t("why5")];
+    inner=`<h2>${t("why_t")}</h2><p class="isub">${t("why_s")}</p>
+      <div class="whylist">${ws.map(w=>`<div class="w">${w}</div>`).join("")}</div>
+      <button class="ibtn" onclick="endIntro('signup')">${t("why_cta")}</button>
+      <button class="ibtn sec" onclick="endIntro('login')">${t("why_login")}</button>`;
+  } else {
+    const q=[["intro0_t","intro0_s","intro0_b"],["intro1_t","intro1_s","intro1_b"],["intro2_t","intro2_s","intro2_b"],["intro3_t","intro3_s","intro3_b"]][s];
+    inner=`<h2>${t(q[0])}</h2><p class="isub">${t(q[1])}</p>
+      <button class="ibtn" onclick="introNext()">${t(q[2])}</button>
+      <div class="introskip" onclick="introSkip()">${t("intro_skip")}</div>`;
+  }
+  document.getElementById("app").innerHTML=`<div class="introwrap"><div class="introcard">
+    <div class="ilogo"><span class="dot"></span>FabriTrade</div>
+    <div class="introdots">${dots}</div>
+    ${inner}</div></div>`;
+}
+function introNext(){ state.introStep=(state.introStep||0)+1; renderIntro(); }
+function introSkip(){ try{localStorage.setItem("ft_intro","1");}catch(e){} showAuth(); }
+function endIntro(mode){ try{localStorage.setItem("ft_intro","1");}catch(e){} state.authMode=mode||"signup"; showAuth(); }
+
+function showAuth(){ document.body.classList.add("auth"); renderAuth(); }
+function renderAuth(){
+  const signup=state.authMode==="signup";
+  document.getElementById("app").innerHTML=`
+  <div class="authwrap"><div class="authcard">
+    <div class="logo" style="justify-content:center;display:flex;align-items:center;gap:8px"><span class="dot"></span>FabriTrade</div>
+    <h2 style="text-align:center">${t("auth_welcome")}</h2>
+    <p class="as" style="text-align:center">${t("auth_sub")}</p>
+    ${state.authErr?`<div class="err">${state.authErr}</div>`:""}
+    ${signup?`<div class="roleseg">
+      <button class="${state.authRole==='buyer'?'on':''}" onclick="state.authRole='buyer';renderAuth()">🛍️ ${t("auth_buyer")}</button>
+      <button class="${state.authRole==='seller'?'on':''}" onclick="state.authRole='seller';renderAuth()">🏬 ${t("auth_seller")}</button></div>`:""}
+    ${signup?`<label>${t("auth_name")}</label><input id="au_name" placeholder="e.g. Nam Phong Textiles">`:""}
+    <label>${t("auth_email")}</label><input id="au_email" type="email" placeholder="you@example.com" autocomplete="email">
+    <label>${t("auth_pass")}</label><input id="au_pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()">
+    <button class="btn btn-primary" style="width:100%" onclick="doAuth()">${signup?t("auth_go_signup"):t("auth_go_login")}</button>
+    <div class="switch"><a onclick="state.authMode='${signup?'login':'signup'}';state.authErr='';renderAuth()">${signup?t("auth_have"):t("auth_new")}</a></div>
+    <div class="priv">${t("auth_private")}</div>
+    <div class="switch" style="margin-top:14px"><select class="cur" onchange="setLang(this.value)">
+      <option value="en" ${state.lang==='en'?'selected':''}>🌐 English</option>
+      <option value="zh" ${state.lang==='zh'?'selected':''}>🇨🇳 中文</option>
+      <option value="vi" ${state.lang==='vi'?'selected':''}>🇻🇳 Tiếng Việt</option></select></div>
+  </div></div>`;
+}
+function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function doAuth(){
+  const g=id=>{const e=document.getElementById(id);return e?e.value.trim():"";};
+  const email=g("au_email").toLowerCase(), pass=g("au_pass");
+  state.authErr="";
+  const users=loadUsers();
+  if(state.authMode==="signup"){
+    const name=g("au_name");
+    if(!name||!email||!pass){ state.authErr=t("auth_err_fields"); return renderAuth(); }
+    if(!validEmail(email)){ state.authErr=t("auth_bad_email"); return renderAuth(); }
+    if(users.some(u=>u.email===email)){ state.authErr=t("auth_err_exists"); return renderAuth(); }
+    const user={name,email,pass:hashPw(pass),role:state.authRole};
+    users.push(user); saveUsers(users);
+    finishAuth(user);
+  } else {
+    if(!email||!pass){ state.authErr=t("auth_err_fields"); return renderAuth(); }
+    const user=users.find(u=>u.email===email && u.pass===hashPw(pass));
+    if(!user){ state.authErr=t("auth_err_login"); return renderAuth(); }
+    finishAuth(user);
+  }
+}
+function finishAuth(user){
+  state.user={id:user.id,name:user.name,email:user.email,role:user.role};
+  state.role=(user.role==="owner")?"seller":(user.role||"buyer");
+  try{localStorage.setItem("ft_user",JSON.stringify(state.user));}catch(e){}
+  document.body.classList.remove("auth");
+  if(state.view==="sell"||state.view==="store"||state.view==="dash") {} else state.view="browse";
+  render(); animView();
+  toast(t("intro_welcome_toast")+", "+String(user.name).split(" ")[0]+" 👋");
+  setTimeout(showTour, 900); // offer the guided tour once to new users (skippable)
+}
+function logout(){
+  state.user=null; try{localStorage.removeItem("ft_user");}catch(e){}
+  state.view="browse"; showAuth();
+}
+
+/* ============ save across refresh ============ */
+const LS_KEY="fabritrade_v1";
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify({
+    lang:state.lang, cur:state.cur, dark:state.dark, role:state.role,
+    cart:state.cart, fav:state.fav, orders:state.orders, recent:state.recent,
+    dash:state.dash, listings:LISTINGS, rfqs:state.rfqs
+  })); }catch(e){}
+}
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem(LS_KEY)); if(!d) return;
+    if(d.lang)state.lang=d.lang; if(d.cur)state.cur=d.cur; state.dark=!!d.dark;
+    if(d.role)state.role=d.role;
+    state.cart=d.cart||[]; state.fav=d.fav||[]; state.orders=d.orders||[]; state.recent=d.recent||[];
+    if(d.dash)state.dash=d.dash;
+    if(Array.isArray(d.listings)&&d.listings.length)LISTINGS=d.listings;
+    if(Array.isArray(d.rfqs)&&d.rfqs.length)state.rfqs=d.rfqs;
+  }catch(e){}
+}
+function resetData(){ try{localStorage.removeItem(LS_KEY);}catch(e){} location.reload(); }
+
+function t(k){return (I18N[state.lang][k]||I18N.en[k]||k)}
+function money(n){
+  const c=CUR[state.cur], v=n*c.rate;
+  const s=v.toLocaleString("en-US",{minimumFractionDigits:c.dp,maximumFractionDigits:c.dp});
+  return c.post ? s+c.sym : c.sym+s;
+}
+function L(o){ if(o==null) return ""; if(typeof o!=="object") return String(o); return o[state.lang]||o.en||Object.values(o)[0]||""; }
+function setCur(c){ state.cur=c; render(); }
+function toggleDark(){ state.dark=!state.dark; document.body.classList.toggle("dark",state.dark); render(); }
+
+/* ============ chrome ============ */
+function renderChrome(){
+  const tabs = state.role==="buyer"
+    ? [["browse","nav_browse"],["rfq","nav_rfq"],["market","nav_market"],["messages","nav_messages"],["orders","nav_orders"]]
+    : [["browse","nav_browse"],["rfq","nav_rfq"],["market","nav_market"],["store","nav_store"],["sell","nav_sell"],["messages","nav_messages"],["dash","nav_dash"]];
+  document.getElementById("nav").innerHTML = tabs.map(([v,k])=>
+    `<button class="${state.view===v?'active':''}" onclick="go('${v}')">${t(k)}${v==='messages'?'<span class="badge">2</span>':''}</button>`).join("");
+  document.getElementById("roleSwitch").innerHTML =
+    `<button class="${state.role==='buyer'?'on':''}" onclick="setRole('buyer')">${t('role_buyer')}</button>
+     <button class="${state.role==='seller'?'on':''}" onclick="setRole('seller')">${t('role_seller')}</button>`;
+  document.getElementById("lang").value = state.lang;
+  document.getElementById("cur").value = state.cur;
+  document.getElementById("darkBtn").textContent = state.dark ? "☀️" : "🌙";
+  const fb=document.getElementById("favBtn"), cb=document.getElementById("cartBtn");
+  fb.innerHTML = "♥" + (state.fav.length?`<span class="count">${state.fav.length}</span>`:"");
+  cb.innerHTML = "🛒" + (state.cart.length?`<span class="count">${state.cart.reduce((a,b)=>a+1,0)}</span>`:"");
+  document.documentElement.lang = state.lang;
+  const ft=document.getElementById("foot");
+  if(ft) ft.innerHTML=`<div class="ft-top"><div class="brand"><span class="dot"></span>FabriTrade</div>
+    <div class="trust"><span>${t("foot1")}</span><span>${t("foot2")}</span><span>${t("foot3")}</span><a style="cursor:pointer;color:var(--blue2);font-weight:700" onclick="go('help')">❓ ${t("nav_help")}</a></div></div>
+    <div class="cr">${t("foot_tag")} · ${t("foot_cr")}</div>`;
+  const uc=document.getElementById("userChip"); if(uc)uc.textContent=state.user?(t("auth_hi")+", "+String(state.user.name).split(" ")[0]):"";
+  if(typeof tourStep!=="undefined" && tourStep>=0) renderTourCard();
+  const fl=document.getElementById("aiFabLabel"); if(fl)fl.textContent=t("ai_open");
+  const ap=document.getElementById("aiPanel"); if(ap&&ap.classList.contains("show")&&aiMsgs)renderAI();
+}
+
+/* ============ router ============ */
+function go(v){ state.view=v; window.scrollTo(0,0); render(); animView(); }
+function animView(){ const a=document.getElementById("app"); if(!a)return; a.classList.remove("view-in"); void a.offsetWidth; a.classList.add("view-in"); }
+function setLang(l){ state.lang=l; try{localStorage.setItem("ft_lang",l);}catch(e){} if(state.user){ render(); } else { renderAuth(); } }
+function setRole(r){
+  state.role=r;
+  if(r==="seller" && (state.view==="orders")) state.view="store";
+  if(r==="buyer" && (state.view==="sell"||state.view==="dash"||state.view==="store")) state.view="browse";
+  toast(r==="seller"?t("switch_seller"):t("switch_buyer"));
+  render();
+}
+function openDetail(id){
+  state.recent=[id,...state.recent.filter(x=>x!==id)].slice(0,8);
+  state.detailId=id; state.view="detail"; window.scrollTo(0,0); render(); animView();
+}
+function openSeller(name){ state.sellerView=name; state.view="seller"; window.scrollTo(0,0); render(); animView(); }
+
+function render(){
+  renderChrome();
+  const app = document.getElementById("app");
+  const v = state.view;
+  if(v==="browse") app.innerHTML = viewBrowse();
+  else if(v==="detail") app.innerHTML = viewDetail();
+  else if(v==="messages") app.innerHTML = viewMessages();
+  else if(v==="sell") app.innerHTML = viewSell();
+  else if(v==="orders") app.innerHTML = viewOrders();
+  else if(v==="dash") app.innerHTML = viewDash();
+  else if(v==="cart") app.innerHTML = viewCart();
+  else if(v==="fav") app.innerHTML = viewFav();
+  else if(v==="store") app.innerHTML = viewStore();
+  else if(v==="seller") app.innerHTML = viewSeller();
+  else if(v==="market") app.innerHTML = viewMarket();
+  else if(v==="rfq") app.innerHTML = viewRFQ();
+  else if(v==="help") app.innerHTML = viewHelp();
+  if(v==="messages") scrollChat();
+  save();
+}
+
+/* ============ browse ============ */
+function filtered(){
+  const f=state.filters, q=state.search.toLowerCase();
+  let r=LISTINGS.filter(x=>{
+    if(f.type && x.type!==f.type) return false;
+    if(f.origin && !L(x.origin).includes(f.origin)) return false;
+    if(f.cert && x.cert!==f.cert) return false;
+    if(f.maxmoq && x.moq>+f.maxmoq) return false;
+    if(f.maxprice && x.price>+f.maxprice) return false;
+    if(q){ const hay=(L(x.title)+" "+x.comp+" "+x.type+" "+L(x.origin)).toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+  const s=state.sort;
+  if(s==="pl") r.sort((a,b)=>a.price-b.price);
+  else if(s==="ph") r.sort((a,b)=>b.price-a.price);
+  else if(s==="rate") r.sort((a,b)=>b.seller.r-a.seller.r);
+  else if(s==="moq") r.sort((a,b)=>a.moq-b.moq);
+  else if(s==="new") r.sort((a,b)=>b.id-a.id);
+  else r.sort((a,b)=>(b.featured?1:0)-(a.featured?1:0)); // featured first by default
+  return r;
+}
+function featuredRow(){
+  if(state.search||Object.values(state.filters).some(Boolean)) return "";
+  const f=LISTINGS.filter(x=>x.featured);
+  if(!f.length) return "";
+  return `<div class="section-h">⭐ ${t("featured_row")}</div><div class="hscroll">${f.map(card).join("")}</div>`;
+}
+function viewBrowse(){
+  const certs=[...new Set(LISTINGS.map(x=>x.cert).filter(Boolean))];
+  const origins=[...new Set(LISTINGS.map(x=>L(x.origin).split(",").pop().trim()))];
+  const list=filtered();
+  return `
+  <div class="hero">
+    <h2>${t("hero_t")}</h2>
+    <p>${t("hero_p")}</p>
+    <div class="tags"><span>🇻🇳 ${t("tag1")}</span><span>✂️ ${t("tag2")}</span><span>🌿 ${t("tag3")}</span><span>📦 ${t("tag4")}</span></div>
+  </div>
+  ${statsBand()}
+  ${featuredRow()}
+  ${aiStrip()}
+  ${howStrip()}
+  ${trendingRow()}
+  ${recentRow()}
+  <div class="toolbar">
+    <div class="search">🔎<input id="searchBox" placeholder="${t("search_ph")}" value="${state.search}" oninput="state.search=this.value;refreshGrid()"></div>
+    <select class="cur" style="padding:11px 10px" onchange="state.sort=this.value;refreshGrid()">
+      <option value="rel" ${state.sort==='rel'?'selected':''}>↕ ${t("sort")}: ${t("sort_rel")}</option>
+      <option value="pl" ${state.sort==='pl'?'selected':''}>${t("sort_pl")}</option>
+      <option value="ph" ${state.sort==='ph'?'selected':''}>${t("sort_ph")}</option>
+      <option value="rate" ${state.sort==='rate'?'selected':''}>${t("sort_rate")}</option>
+      <option value="moq" ${state.sort==='moq'?'selected':''}>${t("sort_moq")}</option>
+      <option value="new" ${state.sort==='new'?'selected':''}>${t("sort_new")}</option>
+    </select>
+  </div>
+  <div class="filters">
+    <div class="panel">
+      <h4>${t("f_type")}</h4>
+      <select onchange="state.filters.type=this.value;refreshGrid()">
+        <option value="">${t("f_all")}</option>
+        ${FABRIC_TYPES.map(x=>`<option ${state.filters.type===x?'selected':''}>${x}</option>`).join("")}
+      </select>
+      <label>${t("f_origin")}</label>
+      <select onchange="state.filters.origin=this.value;refreshGrid()">
+        <option value="">${t("f_all")}</option>
+        ${origins.map(x=>`<option ${state.filters.origin===x?'selected':''}>${x}</option>`).join("")}
+      </select>
+      <label>${t("f_cert")}</label>
+      <select onchange="state.filters.cert=this.value;refreshGrid()">
+        <option value="">${t("f_all")}</option>
+        ${certs.map(x=>`<option ${state.filters.cert===x?'selected':''}>${x}</option>`).join("")}
+      </select>
+      <label>${t("f_maxmoq")}</label>
+      <input type="number" placeholder="500" value="${state.filters.maxmoq}" oninput="state.filters.maxmoq=this.value;refreshGrid()">
+      <label>${t("f_maxprice")}</label>
+      <input type="number" placeholder="20" value="${state.filters.maxprice}" oninput="state.filters.maxprice=this.value;refreshGrid()">
+      <a class="clear" onclick="clearFilters()">✕ ${t("f_clear")}</a>
+    </div>
+    <div style="flex:1">
+      <p class="sub" style="margin:2px 0 14px">${list.length} ${t("results")}</p>
+      <div class="grid" id="grid">${list.map(card).join("")||`<div class="empty">—</div>`}</div>
+    </div>
+  </div>`;
+}
+function trendingRow(){
+  const top=[...LISTINGS].sort((a,b)=>b.seller.r-a.seller.r).slice(0,6);
+  if(state.search||Object.values(state.filters).some(Boolean)) return "";
+  return `<div class="section-h">🔥 ${t("trending")}</div><div class="hscroll">${top.map(card).join("")}</div>`;
+}
+function recentRow(){
+  const items=state.recent.map(id=>LISTINGS.find(l=>l.id===id)).filter(Boolean);
+  if(!items.length||state.search||Object.values(state.filters).some(Boolean)) return "";
+  return `<div class="section-h">🕘 ${t("recent_viewed")}</div><div class="hscroll">${items.map(card).join("")}</div>`;
+}
+function card(x){
+  const faved=state.fav.includes(x.id);
+  const inCart=state.cart.some(c=>c.id===x.id);
+  return `<div class="card" onclick="openDetail(${x.id})">
+    <div class="swatch" style="background:${x.grad}">
+      ${x.img?`<img class="ph" src="${x.img}" alt="${L(x.title)}" loading="lazy" onerror="this.remove()">`:""}
+      <div class="heart ${faved?'on':''}" onclick="event.stopPropagation();toggleFav(${x.id})">${faved?'♥':'♡'}</div>
+      <span class="pin" ${x.featured&&!x.mine?'style="background:linear-gradient(135deg,#f6c445,#f39c12);color:#3a2a00"':''}>${x.mine?'⭐ '+t("your_listing"):(x.featured?t("featured"):'📍 '+L(x.origin).split(",").pop().trim())}</span>
+      ${x.cert?`<span class="cert">${x.cert}</span>`:""}
+    </div>
+    <div class="body">
+      <div class="ttl">${L(x.title)}</div>
+      <div class="meta">${x.comp} · ${x.gsm} GSM · ${x.width}cm</div>
+      <div class="seller-line"><span class="star">★</span>${x.seller.r} · ${x.seller.n}</div>
+      <div class="price">${money(x.price)}<span style="font-size:12px;color:var(--muted);font-weight:600">${t("per_m")}</span></div>
+      <div class="moq">${t("moq")}: ${x.moq} m</div>
+      <button class="btn ${inCart?'btn-ghost':'btn-primary'}" style="margin-top:8px;padding:8px;font-size:13px"
+        onclick="event.stopPropagation();addCart(${x.id})">${inCart?t('in_cart'):'＋ '+t('add_cart')}</button>
+    </div>
+  </div>`;
+}
+function refreshGrid(){
+  const g=document.getElementById("grid"); if(!g)return;
+  const list=filtered();
+  g.innerHTML=list.map(card).join("")||`<div class="empty">—</div>`;
+  const s=document.querySelector(".filters .sub"); if(s)s.textContent=`${list.length} ${t("results")}`;
+}
+function clearFilters(){ state.filters={type:"",origin:"",cert:"",maxmoq:"",maxprice:""}; state.search=""; state.sort="rel"; render(); }
+
+/* ============ favorites & cart ============ */
+function toggleFav(id){
+  const i=state.fav.indexOf(id);
+  if(i>=0){state.fav.splice(i,1);toast(t("saved_off"));} else {state.fav.push(id);toast(t("saved_on"));}
+  render();
+}
+function addCart(id){
+  const ex=state.cart.find(c=>c.id===id);
+  const x=LISTINGS.find(l=>l.id===id);
+  if(ex){ go("cart"); return; }
+  state.cart.push({id, qty:(state.qty[id]||x.moq)});
+  toast(t("added_cart")); render();
+}
+function setCartQty(id,v){ const c=state.cart.find(c=>c.id===id); const x=LISTINGS.find(l=>l.id===id); c.qty=Math.max(x.moq,+v||x.moq); render(); }
+function removeCart(id){ state.cart=state.cart.filter(c=>c.id!==id); render(); }
+function cartTotals(){
+  let sub=0; state.cart.forEach(c=>{const x=LISTINGS.find(l=>l.id===c.id); sub+=x.price*c.qty;});
+  return {sub, comm:sub*COMMISSION};
+}
+function viewFav(){
+  const items=state.fav.map(id=>LISTINGS.find(l=>l.id===id)).filter(Boolean);
+  if(!items.length) return `<h1 class="page">♥ ${t("fav_title")}</h1><div class="empty">${t("fav_empty")}</div>`;
+  return `<h1 class="page">♥ ${t("fav_title")}</h1><p class="sub">${items.length} ${t("items")}</p>
+    <div class="grid">${items.map(card).join("")}</div>`;
+}
+function viewCart(){
+  if(!state.cart.length) return `<h1 class="page">🛒 ${t("cart_title")}</h1><div class="empty">${t("cart_empty")}</div>`;
+  const {sub,comm}=cartTotals();
+  const rows=state.cart.map(c=>{
+    const x=LISTINGS.find(l=>l.id===c.id);
+    return `<tr>
+      <td style="display:flex;gap:10px;align-items:center">
+        <div style="width:46px;height:46px;border-radius:8px;background:${x.grad};overflow:hidden;flex:none;position:relative">
+          ${x.img?`<img class="ph" src="${x.img}" onerror="this.remove()">`:""}</div>
+        <div><div style="font-weight:700">${L(x.title)}</div><div style="font-size:12px;color:var(--muted)">${x.seller.n} · ${x.inco}</div></div>
+      </td>
+      <td><input type="number" value="${c.qty}" min="${x.moq}" onchange="setCartQty(${x.id},this.value)" style="width:90px;padding:8px;border:1px solid var(--line);border-radius:8px;text-align:center"></td>
+      <td style="font-weight:700">${money(x.price*c.qty)}</td>
+      <td><a class="clear" style="color:#e0533d;font-weight:700;cursor:pointer" onclick="removeCart(${x.id})">✕ ${t("remove")}</a></td>
+    </tr>`;
+  }).join("");
+  return `<h1 class="page">🛒 ${t("cart_title")}</h1><p class="sub">${state.cart.length} ${t("items")}</p>
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:24px" class="cartlayout">
+      <table class="data"><tr><th>${t("o_item")}</th><th>${t("o_qty")}</th><th>${t("subtotal")}</th><th></th></tr>${rows}</table>
+      <div class="buybox" style="position:sticky;top:80px;height:fit-content">
+        <div class="row"><span class="mut">${t("subtotal")}</span><span>${money(sub)}</span></div>
+        <div class="row"><span class="mut">${t("cart_comm")}</span><span style="color:var(--green)">${money(comm)}</span></div>
+        <div class="hr"></div>
+        <div class="row" style="font-size:18px;font-weight:800"><span>${t("cart_pay")}</span><span style="color:var(--blue)">${money(sub)}</span></div>
+        <button class="btn btn-primary" onclick="checkoutCart()">${t("checkout")}</button>
+        <div class="commission-note">${t("comm_note")}</div>
+      </div>
+    </div>`;
+}
+function checkoutCart(){
+  const {sub,comm}=cartTotals();
+  state.cart.forEach(c=>{
+    const x=LISTINGS.find(l=>l.id===c.id);
+    const s=x.price*c.qty;
+    state.orders.unshift({title:L(x.title),qty:c.qty,total:s,comm:s*COMMISSION,date:new Date().toISOString().slice(0,10),status:"escrow"});
+  });
+  state.dash.gmv+=sub; state.dash.comm+=comm; state.dash.orders+=state.cart.length;
+  state.cart=[];
+  showModal(`
+    <div class="check">✓</div>
+    <h3 style="text-align:center">${t("order_done")}</h3>
+    <p class="sub" style="text-align:center;margin:8px 0 18px">${t("order_done_p")}</p>
+    <div class="commission-note" style="text-align:center">FabriTrade ${state.lang==='zh'?'佣金':state.lang==='vi'?'hoa hồng':'commission'}: <b style="color:var(--green)">${money(comm)}</b> (3.5%)</div>
+    <button class="btn btn-primary" onclick="closeModal();go('orders')">${t("great")}</button>
+  `);
+}
+
+/* ============ detail ============ */
+function viewDetail(){
+  const x=LISTINGS.find(l=>l.id===state.detailId); if(!x)return viewBrowse();
+  const q=state.qty[x.id]||x.moq;
+  const unit=unitFor(x,q);
+  const sub=q*unit, comm=sub*COMMISSION, sellerGets=sub-comm;
+  const tiers=tiersFor(x);
+  const rows=[
+    ["composition",x.comp],["weight",x.gsm+" GSM"],["width",x.width+" cm"],
+    ["origin",L(x.origin)],["cert",x.cert||"—"],["lead",x.lead+" "+t("days")],
+    ["stock",x.stock+" "+t("available")],["incoterm",x.inco]
+  ];
+  const init=x.seller.n.split(" ").map(w=>w[0]).slice(0,2).join("");
+  return `
+  <a class="back" onclick="go('browse')">← ${t("back")}</a>
+  <div class="detail">
+    <div>
+      <div class="bigswatch" style="background:${x.grad}">${x.img?`<img class="ph" src="${x.img}" alt="${L(x.title)}" onerror="this.remove()">`:""}</div>
+      <h1 class="page" style="margin-top:18px">${L(x.title)}</h1>
+      <div class="seller-line" style="font-size:14px"><span class="star">★</span>${x.seller.r} · ${x.seller.t} ${t("trades")} · ${x.type}</div>
+      <table class="spec-table">
+        ${rows.map(([k,val])=>`<tr><td>${t(k)}</td><td>${val}</td></tr>`).join("")}
+      </table>
+      <div class="sellerbox">
+        <div class="avatar">${init}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;cursor:pointer" onclick="openSeller('${x.seller.n.replace(/'/g,"")}')">${x.seller.n} <span class="cert" style="position:static;background:var(--green);color:#fff;padding:2px 7px;border-radius:6px;font-size:10px">✓ ${t("seller_since")}</span></div>
+          <div style="font-size:13px;color:var(--muted)"><span class="star">★</span> ${x.seller.r} ${t("rating")} · ${x.seller.t} ${t("trades")}</div>
+        </div>
+        <button class="btn-ghost" style="width:auto;padding:9px 16px;border-radius:8px" onclick="openSeller('${x.seller.n.replace(/'/g,"")}')">🏬 ${t("visit_store")}</button>
+      </div>
+    </div>
+    <div>
+      <div class="buybox">
+        <div class="p">${money(x.price)}<span style="font-size:14px;color:var(--muted);font-weight:600">${t("per_m")}</span></div>
+        <div class="row"><span class="mut">${t("moq")}</span><span>${x.moq} m</span></div>
+        <div class="row"><span class="mut">${t("incoterm")}</span><span>${x.inco} · ${L(x.origin)}</span></div>
+        <div class="pbreaks">
+          <div class="pb-h">${t("price_breaks")}</div>
+          ${tiers.map((tt,i)=>`<div class="pb-row ${unit===tt.price?'on':''}"><span>${tt.min}${i===tiers.length-1?'+':'–'+(tiers[i+1]?tiers[i+1].min-1:'')} m</span><span>${money(tt.price)}${t("per_m")}</span></div>`).join("")}
+        </div>
+        <div class="qty">
+          <span style="font-size:14px;font-weight:600">${t("order_qty")}</span>
+          <input type="number" min="${x.moq}" value="${q}" onchange="setQty(${x.id},this.value)">
+        </div>
+        <div class="hr"></div>
+        <div class="row"><span class="mut">${t("subtotal")} (${q} × ${money(unit)})</span><span>${money(sub)}</span></div>
+        ${unit<x.price?`<div class="row" style="margin-top:-2px"><span></span><span style="color:var(--green);font-size:12px;font-weight:700">${t("best_price")}</span></div>`:""}
+        <div class="row"><span class="mut">${t("comm_line")}</span><span style="color:var(--green)">− ${money(comm)}</span></div>
+        <div class="row"><span class="mut">${t("seller_gets")}</span><span>${money(sellerGets)}</span></div>
+        <div class="row" style="font-size:17px;font-weight:800"><span>${t("you_pay")}</span><span style="color:var(--blue)">${money(sub)}</span></div>
+        <button class="btn btn-primary" onclick="confirmBuy(${x.id})">${t("buy_now")}</button>
+        <button class="btn btn-ghost" onclick="addCart(${x.id})">${state.cart.some(c=>c.id===x.id)?t('in_cart'):'＋ '+t("add_cart")}</button>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-ghost" style="margin-top:0" onclick="contactSeller(${x.id})">💬 ${t("contact")}</button>
+          <button class="btn btn-ghost" style="margin-top:0;flex:none;width:48px" title="${t("fav_title")}" onclick="toggleFav(${x.id});">${state.fav.includes(x.id)?'♥':'♡'}</button>
+        </div>
+        <button class="btn btn-ghost" onclick="orderSample(${x.id})">📦 ${t("sample_order")}</button>
+        <div class="commission-note">${t("comm_note")}</div>
+      </div>
+    </div>
+  </div>
+  ${reviewsBlock(x)}
+  ${relatedBlock(x)}`;
+}
+function relatedBlock(x){
+  const rel=LISTINGS.filter(l=>l.id!==x.id && l.type===x.type).slice(0,6);
+  if(!rel.length) return "";
+  return `<div style="margin-top:30px"><div class="section-h">✨ ${t("related")}</div><div class="hscroll">${rel.map(card).join("")}</div></div>`;
+}
+function viewSeller(){
+  const name=state.sellerView;
+  const items=LISTINGS.filter(l=>l.seller.n===name);
+  const s=items[0]?items[0].seller:{r:5,t:0};
+  const init=name.split(" ").map(w=>w[0]).slice(0,2).join("");
+  return `
+  <a class="back" onclick="go('browse')">← ${t("back")}</a>
+  <div class="sellerbox" style="margin-top:0;padding:22px">
+    <div class="avatar" style="width:60px;height:60px;font-size:24px">${init}</div>
+    <div style="flex:1">
+      <div style="font-weight:800;font-size:20px">${name} <span class="cert" style="position:static;background:var(--green);color:#fff;padding:2px 8px;border-radius:6px;font-size:11px">✓ ${t("seller_since")}</span></div>
+      <div style="font-size:14px;color:var(--muted)"><span class="star">★</span> ${s.r} ${t("rating")} · ${s.t} ${t("trades")} · ${items.length} ${t("products_word")}</div>
+    </div>
+    <button class="btn-ghost" style="width:auto;padding:10px 18px;border-radius:8px" onclick="contactSeller(${items[0]?items[0].id:0})">💬 ${t("contact")}</button>
+  </div>
+  <div class="section-h" style="margin-top:24px">🏬 ${t("more_seller")}</div>
+  <div class="grid">${items.map(card).join("")}</div>`;
+}
+function reviewsBlock(x){
+  return `<div style="margin-top:34px">
+    <h3 style="margin:0 0 4px">${t("reviews")} <span style="color:var(--gold)">★ ${x.seller.r}</span> <span style="color:var(--muted);font-weight:400;font-size:14px">(${x.seller.t} ${t("trades")})</span></h3>
+    <div class="grid" style="margin-top:14px">
+      ${REVIEWS.map(r=>`<div class="panel" style="width:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>${r.n} <span style="font-size:11px;color:var(--muted)">· ${r.c}</span></strong>
+          <span style="color:var(--gold)">${'★'.repeat(r.r)}${'☆'.repeat(5-r.r)}</span>
+        </div>
+        <div style="font-size:11px;color:var(--green);font-weight:700;margin:4px 0 8px">✓ ${t("verified_purchase")}</div>
+        <div style="font-size:13.5px">${L(r.txt)}</div>
+      </div>`).join("")}
+    </div>
+  </div>`;
+}
+function orderSample(id){
+  const x=LISTINGS.find(l=>l.id===id);
+  const fee=5, comm=fee*COMMISSION;
+  showModal(`<h3>📦 ${t("sample_order")}</h3>
+    <p class="sub" style="margin:4px 0 14px">${L(x.title)}</p>
+    <p style="font-size:13.5px;color:var(--muted);margin:0 0 14px">${t("sample_desc")}</p>
+    <div class="ord-row tot"><span>${t("sample_fee")}</span><span style="color:var(--blue)">${money(fee)}</span></div>
+    <button class="btn btn-primary" onclick="placeSample(${id})">${t("sample_confirm")}</button>
+    <button class="btn btn-ghost" onclick="closeModal()">${t("cancel")}</button>`);
+}
+function placeSample(id){
+  const x=LISTINGS.find(l=>l.id===id); const fee=5, comm=fee*COMMISSION;
+  state.orders.unshift({title:"🧵 "+L(x.title),qty:"swatch",total:fee,comm,date:new Date().toISOString().slice(0,10),status:"escrow",step:1,sample:true});
+  state.dash.gmv+=fee; state.dash.comm+=comm; state.dash.orders+=1;
+  closeModal(); toast(t("sample_placed")); go("orders");
+}
+function setQty(id,v){ const x=LISTINGS.find(l=>l.id===id); state.qty[id]=Math.max(x.moq,+v||x.moq); render(); }
+// bulk price breaks: bigger orders get a lower per-meter price
+function tiersFor(x){ return [
+  {min:x.moq,      price:x.price},
+  {min:x.moq*5,    price:+(x.price*0.92).toFixed(2)},
+  {min:x.moq*20,   price:+(x.price*0.85).toFixed(2)},
+];}
+function unitFor(x,q){ const ts=tiersFor(x); let p=ts[0].price; ts.forEach(tt=>{ if(q>=tt.min) p=tt.price; }); return p; }
+
+/* ============ buy flow ============ */
+function confirmBuy(id){
+  const x=LISTINGS.find(l=>l.id===id); const q=state.qty[id]||x.moq;
+  const unit=unitFor(x,q);
+  const sub=q*unit, comm=sub*COMMISSION, sellerGets=sub-comm;
+  showModal(`
+    <h3>${t("confirm_buy")}</h3>
+    <p class="sub" style="margin:4px 0 16px">${L(x.title)}</p>
+    <div class="ord-row"><span>${q} m × ${money(unit)}</span><span>${money(sub)}</span></div>
+    <div class="ord-row"><span style="color:var(--muted)">${t("comm_line")}</span><span style="color:var(--green)">− ${money(comm)}</span></div>
+    <div class="ord-row"><span style="color:var(--muted)">${t("seller_gets")}</span><span>${money(sellerGets)}</span></div>
+    <div class="ord-row tot"><span>${t("you_pay")}</span><span style="color:var(--blue)">${money(sub)}</span></div>
+    <button class="btn btn-primary" onclick="placeOrder(${id})">${t("place")}</button>
+    <button class="btn btn-ghost" onclick="closeModal()">${t("cancel")}</button>
+  `);
+}
+function placeOrder(id){
+  const x=LISTINGS.find(l=>l.id===id); const q=state.qty[id]||x.moq;
+  const sub=q*unitFor(x,q), comm=sub*COMMISSION;
+  state.orders.unshift({title:L(x.title),qty:q,total:sub,comm,date:new Date().toISOString().slice(0,10),status:"escrow",step:1});
+  state.dash.gmv+=sub; state.dash.comm+=comm; state.dash.orders+=1;
+  showModal(`
+    <div class="check">✓</div>
+    <h3 style="text-align:center">${t("order_done")}</h3>
+    <p class="sub" style="text-align:center;margin:8px 0 18px">${t("order_done_p")}</p>
+    <div class="commission-note" style="text-align:center">FabriTrade ${state.lang==='zh'?'佣金':state.lang==='vi'?'hoa hồng':'commission'}: <b style="color:var(--green)">${money(comm)}</b> (3.5%)</div>
+    <button class="btn btn-primary" onclick="closeModal();go('orders')">${t("great")}</button>
+  `);
+}
+
+/* ============ messages ============ */
+function contactSeller(listingId){
+  const x=LISTINGS.find(l=>l.id===listingId);
+  let th=THREADS.find(t=>t.sellerId===x.seller_id||t.name===x.seller.n);
+  if(!th){ th={id:THREADS.length+1, sellerId:listingId, name:x.seller.n, msgs:[
+    {me:false,t:"Hello! How can I help with this fabric?",tr:"您好！这款面料有什么可以帮您？"}]}; THREADS.push(th); }
+  state.threadId=th.id; state.view="messages"; toast(t("contacted")); render();
+}
+function viewMessages(){
+  const th=THREADS.find(x=>x.id===state.threadId)||THREADS[0];
+  return `
+  <h1 class="page">${t("chat_title")}</h1>
+  <div class="sub">&nbsp;</div>
+  <div class="chat-wrap">
+    <div class="threads">
+      ${THREADS.map(x=>`<div class="thread ${x.id===state.threadId?'active':''}" onclick="state.threadId=${x.id};render()">
+        <div class="n">${x.name}</div>
+        <div class="last">${x.msgs[x.msgs.length-1].t}</div></div>`).join("")}
+    </div>
+    <div class="chat">
+      <div class="head">
+        <strong>${th.name}</strong>
+        <label class="toggle"><input type="checkbox" ${state.translate?'checked':''} onchange="state.translate=this.checked;render()"> 🌐 ${t("translate")}</label>
+      </div>
+      <div class="ai-mod">🛡️ ${t("ai_mod")}</div>
+      <div class="msgs" id="msgs">
+        ${th.msgs.map(m=> m.ai
+          ? `<div class="msg-ai">${t("ai_mod_warn")}</div>`
+          : `<div class="msg ${m.me?'me':'them'}">${m.t}${state.translate&&m.tr?`<span class="tr">↳ ${m.tr}</span>`:""}</div>`).join("")}
+      </div>
+      <div class="composer">
+        <input id="msgInput" placeholder="${t("type_msg")}" onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="btn-primary" style="width:auto;padding:0 20px;border-radius:10px" onclick="sendMsg()">${t("send")}</button>
+      </div>
+    </div>
+  </div>`;
+}
+const RISKY=["bank","wire","whatsapp","wechat","telegram","zalo","paypal","western union","off platform","off-platform","offline","outside","skip the fee","skip the platform","account number","转账","银行","线下","微信","私下","chuyển khoản","ngoài nền tảng","ngân hàng"];
+function isRisky(s){ s=s.toLowerCase(); return RISKY.some(w=>s.includes(w)); }
+function sendMsg(){
+  const el=document.getElementById("msgInput"); const v=el.value.trim(); if(!v)return;
+  const th=THREADS.find(x=>x.id===state.threadId);
+  th.msgs.push({me:true,t:v,tr:""});
+  el.value="";
+  const risky=isRisky(v);
+  render();
+  if(risky){ setTimeout(()=>{ th.msgs.push({ai:true}); render(); }, 500); return; }
+  setTimeout(()=>{ th.msgs.push({me:false,t:"👍 Noted, I'll send you a quote shortly.",tr:"👍 收到，我马上给您报价。"}); render(); },900);
+}
+function scrollChat(){ const m=document.getElementById("msgs"); if(m)m.scrollTop=m.scrollHeight; }
+
+/* ============ sell ============ */
+function viewSell(){
+  const editing=!!state.editId;
+  return `
+  <a class="back" onclick="go('store')">← ${t("store_title")}</a>
+  <h1 class="page">${editing?"✏️ "+t("edit"):t("sell_title")}</h1>
+  <p class="sub">${t("sell_sub")}</p>
+  <div class="form">
+    <div class="fld">
+      <label>${t("fld_photo")}</label>
+      <div class="uploader" onclick="document.getElementById('s_file').click()">
+        ${state.uploadImg
+          ? `<img src="${state.uploadImg}" class="preview" alt="preview">
+             <button class="rmphoto" onclick="event.stopPropagation();clearUpload()">✕ ${t("photo_remove")}</button>`
+          : `<div class="up-empty"><div style="font-size:34px">📷</div>
+             <div style="font-weight:700;color:var(--blue)">${t("photo_choose")}</div>
+             <div style="font-size:12.5px;color:var(--muted);max-width:360px;margin-top:4px">${t("photo_hint")}</div></div>`}
+      </div>
+      <input type="file" id="s_file" accept="image/*" style="display:none" onchange="handleUpload(this)">
+    </div>
+    <div class="fld"><label>${t("fld_title")}</label><input id="s_title" placeholder="e.g. Combed Cotton Jersey 180 GSM"></div>
+    <div class="two">
+      <div class="fld"><label>${t("fld_type")}</label><select id="s_type">${FABRIC_TYPES.map(x=>`<option>${x}</option>`).join("")}</select></div>
+      <div class="fld"><label>${t("fld_comp")}</label><input id="s_comp" placeholder="100% Cotton"></div>
+    </div>
+    <div class="two">
+      <div class="fld"><label>${t("fld_gsm")}</label><input id="s_gsm" type="number" placeholder="180"></div>
+      <div class="fld"><label>${t("fld_width")}</label><input id="s_width" type="number" placeholder="150"></div>
+    </div>
+    <div class="two">
+      <div class="fld"><label>${t("fld_price")}</label><input id="s_price" type="number" step="0.1" placeholder="3.20"></div>
+      <div class="fld"><label>${t("fld_moq")}</label><input id="s_moq" type="number" placeholder="50"></div>
+    </div>
+    <div class="two">
+      <div class="fld"><label>${t("fld_origin")}</label><input id="s_origin" placeholder="Nam Định, Vietnam"></div>
+      <div class="fld"><label>${t("fld_cert")}</label><input id="s_cert" placeholder="OEKO-TEX"></div>
+    </div>
+    <div class="fld"><label>${t("fld_color")}</label><input id="s_color" type="color" value="#cdbfa6" style="height:44px;padding:4px"></div>
+    <button class="btn btn-ghost" style="background:linear-gradient(135deg,#7b3ff2,#4361ee);color:#fff;border:none" onclick="aiFillListing()">${t("ai_fill")}</button>
+    <button class="btn btn-primary" onclick="publish()">${editing?t("save_changes"):t("publish")}</button>
+  </div>`;
+}
+function aiFillListing(){
+  const g=id=>document.getElementById(id);
+  const type=(g("s_type")&&g("s_type").value)||"Cotton";
+  const presets={
+    Cotton:{comp:"100% Combed Cotton",gsm:180,width:150,price:3.2,cert:"OEKO-TEX"},
+    Polyester:{comp:"100% Recycled Polyester",gsm:280,width:165,price:4.1,cert:"GRS"},
+    Silk:{comp:"100% Mulberry Silk",gsm:88,width:114,price:18.5,cert:"OEKO-TEX"},
+    Linen:{comp:"100% Linen",gsm:165,width:140,price:7.8,cert:"GOTS"},
+    Denim:{comp:"98% Cotton 2% Spandex",gsm:340,width:150,price:5.6,cert:""},
+    Wool:{comp:"100% Merino Wool",gsm:250,width:150,price:22,cert:""},
+    Blend:{comp:"65% Cotton 35% Polyester",gsm:200,width:150,price:3.6,cert:"OEKO-TEX"},
+    Knit:{comp:"95% Cotton 5% Spandex",gsm:320,width:100,price:4.8,cert:""},
+  };
+  const p=presets[type]||presets.Cotton;
+  const set=(id,v)=>{const e=g(id); if(e&&!e.value)e.value=v;};
+  if(g("s_title")&&!g("s_title").value) g("s_title").value=`${p.comp.split(" ").slice(-1)[0]==="Cotton"?"":""}${type} ${p.gsm} GSM`;
+  set("s_comp",p.comp); set("s_gsm",p.gsm); set("s_width",p.width);
+  set("s_price",p.price); set("s_moq",50); set("s_origin","Nam Định, Vietnam"); set("s_cert",p.cert);
+  toast(t("ai_filled"));
+}
+function uploaderHTML(){
+  return state.uploadImg
+    ? `<img src="${state.uploadImg}" class="preview" alt="preview">
+       <button class="rmphoto" onclick="event.stopPropagation();clearUpload()">✕ ${t("photo_remove")}</button>`
+    : `<div class="up-empty"><div style="font-size:34px">📷</div>
+       <div style="font-weight:700;color:var(--blue)">${t("photo_choose")}</div>
+       <div style="font-size:12.5px;color:var(--muted);max-width:360px;margin-top:4px">${t("photo_hint")}</div></div>`;
+}
+function handleUpload(input){
+  const f=input.files&&input.files[0]; if(!f)return;
+  const reader=new FileReader();
+  reader.onload=e=>{ state.uploadImg=e.target.result;
+    const u=document.querySelector(".uploader"); if(u)u.innerHTML=uploaderHTML();
+    toast(t("photo_added"));
+  };
+  reader.readAsDataURL(f);
+}
+function clearUpload(){
+  state.uploadImg=null;
+  const u=document.querySelector(".uploader"); if(u)u.innerHTML=uploaderHTML();
+  const fi=document.getElementById("s_file"); if(fi)fi.value="";
+}
+function publish(){
+  const g=id=>document.getElementById(id).value;
+  const title=g("s_title")||"New Fabric Listing";
+  const col=g("s_color");
+  const id=Math.max(...LISTINGS.map(l=>l.id))+1;
+  const o=g("s_origin")||"Vietnam";
+  // use the seller's uploaded photo if they added one; otherwise a stock photo by type
+  const photo=state.uploadImg || picByType(g("s_type"),200+id);
+  LISTINGS.unshift({id,title:{en:title,zh:title,vi:title},type:g("s_type"),comp:g("s_comp")||"—",
+    gsm:+g("s_gsm")||150,width:+g("s_width")||150,price:+g("s_price")||1,moq:+g("s_moq")||50,
+    origin:{en:o,zh:o,vi:o},cert:g("s_cert"),color:col,
+    seller:{n:"My Mill (You)",r:5.0,t:0},lead:7,stock:"new",inco:"FOB",grad:`linear-gradient(135deg,${col},${col})`,img:photo});
+  if(state.editId){
+    // editing an existing product
+    const x=LISTINGS.find(l=>l.id===state.editId);
+    Object.assign(x,{title:{en:title,zh:title,vi:title},type:g("s_type"),comp:g("s_comp")||"—",
+      gsm:+g("s_gsm")||150,width:+g("s_width")||150,price:+g("s_price")||1,moq:+g("s_moq")||50,
+      origin:{en:o,zh:o,vi:o},cert:g("s_cert"),color:col,grad:`linear-gradient(135deg,${col},${col})`,
+      img:state.uploadImg||x.img});
+    state.editId=null; state.uploadImg=null;
+    toast(t("saved_ok")); go("store"); return;
+  }
+  LISTINGS.unshift({id,title:{en:title,zh:title,vi:title},type:g("s_type"),comp:g("s_comp")||"—",
+    gsm:+g("s_gsm")||150,width:+g("s_width")||150,price:+g("s_price")||1,moq:+g("s_moq")||50,
+    origin:{en:o,zh:o,vi:o},cert:g("s_cert"),color:col,
+    seller:{n:"My Mill (You)",r:5.0,t:0},lead:7,stock:"new",inco:"FOB",grad:`linear-gradient(135deg,${col},${col})`,img:photo,mine:true});
+  state.uploadImg=null;
+  toast(t("listed_ok")); go("store");
+}
+
+/* ============ seller store / my listings ============ */
+function viewStore(){
+  const mine=LISTINGS.filter(x=>x.mine);
+  const head=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <div><h1 class="page" style="margin-bottom:2px">🏬 ${t("store_title")}</h1><p class="sub" style="margin:0">${t("store_sub")}</p></div>
+      <button class="btn btn-primary" style="width:auto;padding:11px 18px" onclick="listNew()">${t("list_new")}</button>
+    </div>`;
+  if(!mine.length) return head+`<div class="empty">${t("store_empty")}</div>`;
+  return head+`<div class="grid" style="margin-top:18px">${mine.map(storeCard).join("")}</div>`;
+}
+function storeCard(x){
+  return `<div class="card">
+    <div class="swatch" style="background:${x.grad}" onclick="openDetail(${x.id})">
+      ${x.img?`<img class="ph" src="${x.img}" alt="${L(x.title)}" loading="lazy" onerror="this.remove()">`:""}
+      <span class="pin" style="background:var(--green);color:#fff">● ${t("live")}</span>
+      ${x.cert?`<span class="cert">${x.cert}</span>`:""}
+    </div>
+    <div class="body">
+      <div class="ttl">${L(x.title)}</div>
+      <div class="meta">${x.comp} · ${x.gsm} GSM · ${x.width}cm</div>
+      <div class="price">${money(x.price)}<span style="font-size:12px;color:var(--muted);font-weight:600">${t("per_m")}</span></div>
+      <div class="moq">${t("moq")}: ${x.moq} m · ${x.stock}</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-ghost" style="margin-top:0;padding:8px;font-size:13px" onclick="editListing(${x.id})">✏️ ${t("edit")}</button>
+        <button class="btn btn-ghost" style="margin-top:0;padding:8px;font-size:13px;color:#e0533d;border-color:#e0533d" onclick="deleteListing(${x.id})">🗑 ${t("del")}</button>
+      </div>
+      ${x.featured
+        ? `<div style="margin-top:8px;font-size:12px;font-weight:700;color:#b8860b">${t("featured")}</div>`
+        : `<button class="btn" style="margin-top:8px;padding:8px;font-size:13px;background:linear-gradient(135deg,#f6c445,#f39c12);color:#3a2a00" onclick="boostListing(${x.id})">${t("boost")}</button>`}
+    </div>
+  </div>`;
+}
+function listNew(){ state.editId=null; state.uploadImg=null; go("sell"); }
+function editListing(id){
+  const x=LISTINGS.find(l=>l.id===id);
+  state.editId=id; state.uploadImg = (x.img&&x.img.startsWith("data:"))?x.img:null;
+  go("sell");
+  // prefill the form fields
+  const set=(k,v)=>{const el=document.getElementById(k);if(el)el.value=v;};
+  set("s_title",L(x.title)); set("s_type",x.type); set("s_comp",x.comp);
+  set("s_gsm",x.gsm); set("s_width",x.width); set("s_price",x.price);
+  set("s_moq",x.moq); set("s_origin",L(x.origin)); set("s_cert",x.cert); set("s_color",x.color);
+}
+function deleteListing(id){
+  showModal(`<h3>${t("del_confirm")}</h3>
+    <p class="sub" style="margin:6px 0 18px">${L(LISTINGS.find(l=>l.id===id).title)}</p>
+    <button class="btn btn-primary" style="background:#e0533d" onclick="confirmDelete(${id})">🗑 ${t("del")}</button>
+    <button class="btn btn-ghost" onclick="closeModal()">${t("cancel")}</button>`);
+}
+function confirmDelete(id){
+  LISTINGS=LISTINGS.filter(l=>l.id!==id);
+  state.cart=state.cart.filter(c=>c.id!==id); state.fav=state.fav.filter(f=>f!==id);
+  closeModal(); toast(t("deleted_ok")); render();
+}
+
+/* ============ orders ============ */
+function timeline(step){
+  const steps=[t("track_paid"),t("track_prep"),t("track_ship"),t("track_deliver")];
+  return `<div class="track">${steps.map((s,i)=>`<div class="tstep ${i<=step?'done':''}">
+    <div class="tdot">${i<=step?'✓':i+1}</div><div class="tlbl">${s}</div></div>${i<steps.length-1?`<div class="tbar ${i<step?'done':''}"></div>`:""}`).join("")}</div>`;
+}
+function viewOrders(){
+  if(!state.orders.length) return `<h1 class="page">${t("orders_title")}</h1><div class="empty">${t("ord_empty")}</div>`;
+  return `<h1 class="page">${t("orders_title")}</h1><div class="sub">&nbsp;</div>
+  <div style="display:flex;flex-direction:column;gap:14px">
+  ${state.orders.map(o=>`<div class="panel" style="width:auto">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+      <div><div style="font-weight:700">${o.title}</div>
+        <div style="font-size:12.5px;color:var(--muted)">${o.qty==='swatch'?'':o.qty+' m · '}${money(o.total)} · ${o.date}</div></div>
+      <span class="pill escrow">${t("st_escrow")}</span>
+    </div>
+    ${timeline(o.step||1)}
+  </div>`).join("")}
+  </div>`;
+}
+
+/* ============ dashboard ============ */
+function viewDash(){
+  const d=state.dash;
+  const txns=[
+    {o:"#A-1042",b:"Lemaire Studio (FR)",v:48200,s:"done"},
+    {o:"#A-1041",b:"Uniqlo Sourcing (JP)",v:91500,s:"done"},
+    {o:"#A-1040",b:"Local Tailor HCMC",v:640,s:"done"},
+    {o:"#A-1039",b:"Zara Vendor (ES)",v:62000,s:"escrow"},
+    {o:"#A-1038",b:"Etsy Maker (US)",v:210,s:"done"},
+    ...state.orders.map((o,i)=>({o:"#A-"+(1043+i),b:"You (test order)",v:o.total,s:"escrow"})),
+  ];
+  return `
+  <h1 class="page">${t("dash_title")}</h1>
+  <p class="sub">${t("dash_sub")}</p>
+  <div class="stats">
+    <div class="stat"><div class="lbl">${t("d_gmv")}</div><div class="val">${money(d.gmv)}</div></div>
+    <div class="stat"><div class="lbl">${t("d_comm")}</div><div class="val green">${money(d.comm)}</div></div>
+    <div class="stat"><div class="lbl">${t("d_orders")}</div><div class="val">${d.orders}</div></div>
+    <div class="stat"><div class="lbl">${t("d_users")}</div><div class="val">${d.users.toLocaleString()}</div></div>
+  </div>
+  <div class="stat" style="margin-bottom:22px;background:linear-gradient(120deg,#1f9d6b,#13754f);color:#fff;border:none">
+    <div class="lbl" style="color:rgba(255,255,255,.85)">${t("d_avail")}</div>
+    <div class="val" style="color:#fff">${money(d.comm)}</div>
+  </div>
+  <h3 style="margin:0 0 12px">${t("recent")}</h3>
+  <table class="data">
+    <tr><th>${t("t_order")}</th><th>${t("t_buyer")}</th><th>${t("t_value")}</th><th>${t("t_comm")}</th><th>${t("t_status")}</th></tr>
+    ${txns.map(x=>`<tr><td>${x.o}</td><td>${x.b}</td><td>${money(x.v)}</td>
+      <td style="color:var(--green);font-weight:700">${money(x.v*COMMISSION)}</td>
+      <td><span class="pill ${x.s==='done'?'done':'escrow'}">${x.s==='done'?t("st_done"):t("st_escrow")}</span></td></tr>`).join("")}
+  </table>
+  <p style="margin-top:20px"><a class="clear" style="cursor:pointer;color:var(--muted)" onclick="resetData()">↺ ${t("clear_data")}</a></p>`;
+}
+
+/* ============ ui helpers ============ */
+function toggleNotifs(ev){
+  ev.stopPropagation();
+  const pnl=document.getElementById("notifPanel");
+  const open=pnl.classList.contains("show");
+  if(open){ pnl.classList.remove("show"); return; }
+  const items=[["💬",t("notif1")],["📦",t("notif2")],["🌿",t("notif3")]];
+  pnl.innerHTML=`<div class="nh">${t("notifs")}<a class="clear" style="font-size:12px;cursor:pointer" onclick="closeNotifs()">${t("mark_read")}</a></div>
+    ${items.map(([ic,txt])=>`<div class="notif-item" onclick="closeNotifs();go('messages')"><span class="ic">${ic}</span><span>${txt}</span></div>`).join("")}`;
+  pnl.classList.add("show");
+  document.getElementById("bellBtn").querySelector(".count").style.display="none";
+}
+function closeNotifs(){ const p=document.getElementById("notifPanel"); if(p)p.classList.remove("show"); }
+document.addEventListener("click",e=>{ const w=document.querySelector(".notif-wrap"); if(w&&!w.contains(e.target))closeNotifs(); });
+
+/* ============ home polish: stats + how-it-works ============ */
+function statsBand(){
+  if(state.search||Object.values(state.filters).some(Boolean)) return "";
+  const s=[["1,820+",t("sp_traders")],["50+",t("sp_countries")],[money(2840000).replace(/\.00$/,""),t("sp_gmv")],["4.8★",t("sp_rating")]];
+  return `<div class="statband">${s.map(x=>`<div class="s"><div class="n">${x[0]}</div><div class="l">${x[1]}</div></div>`).join("")}</div>`;
+}
+function howStrip(){
+  if(state.search||Object.values(state.filters).some(Boolean)) return "";
+  const steps=[[t("how1t"),t("how1")],[t("how2t"),t("how2")],[t("how3t"),t("how3")]];
+  return `<div class="how"><h3>🧭 ${t("how_t")}</h3><div class="cols">
+    ${steps.map((x,i)=>`<div class="c"><div class="hn">${i+1}</div><div class="ht">${x[0]}</div><div class="hd">${x[1]}</div></div>`).join("")}
+  </div></div>`;
+}
+
+/* ============ Boost / featured listings ============ */
+function boostListing(id){
+  const x=LISTINGS.find(l=>l.id===id); const fee=9.99;
+  showModal(`<h3>${t("boost_t")}</h3><p class="sub" style="margin:4px 0 12px">${L(x.title)}</p>
+    <p style="font-size:13.5px;color:var(--muted);margin:0 0 14px">${t("boost_s")}</p>
+    <div class="ord-row tot"><span>${t("boost_price")}</span><span style="color:var(--blue)">${money(fee)}</span></div>
+    <button class="btn btn-primary" style="background:linear-gradient(135deg,#f6c445,#f39c12);color:#3a2a00" onclick="confirmBoost(${id})">${t("boost_go")}</button>
+    <button class="btn btn-ghost" onclick="closeModal()">${t("cancel")}</button>`);
+}
+function confirmBoost(id){
+  const x=LISTINGS.find(l=>l.id===id); x.featured=true;
+  state.dash.comm+=9.99; closeModal(); toast(t("boosted")); render();
+}
+
+/* ============ RFQ board + AI sourcing agent ============ */
+function viewRFQ(){
+  const list=state.rfqs||[];
+  const seller=state.role==="seller";
+  const ai=state.aiSrc;
+  return `<h1 class="page">📋 ${t("rfq_title")}</h1><p class="sub">${t("rfq_sub")}</p>
+  <div class="detail" style="grid-template-columns:380px 1fr;align-items:start">
+    <div class="form" style="max-width:none">
+      <h3 style="margin:0 0 12px">${t("rfq_post")}</h3>
+      <div class="fld"><label>${t("rfq_f_title")}</label><input id="r_title" placeholder="e.g. Organic cotton jersey 180 GSM"></div>
+      <div class="two">
+        <div class="fld"><label>${t("fld_type")}</label><select id="r_type">${FABRIC_TYPES.map(x=>`<option>${x}</option>`).join("")}</select></div>
+        <div class="fld"><label>${t("rfq_f_qty")}</label><input id="r_qty" type="number" placeholder="2000"></div>
+      </div>
+      <div class="fld"><label>${t("rfq_f_budget")}</label><input id="r_budget" type="number" step="0.1" placeholder="3.50"></div>
+      <div class="fld"><label>${t("rfq_f_notes")}</label><input id="r_notes" placeholder="GOTS, white, 150cm…"></div>
+      <button class="btn btn-primary" onclick="postRFQ()">${t("rfq_submit")}</button>
+      <button class="btn btn-ghost" style="background:linear-gradient(135deg,#7b3ff2,#4361ee);color:#fff;border:none" onclick="aiSourceFromForm()">${t("ai_src")}</button>
+    </div>
+    <div>
+      ${ai?aiSourcePanel(ai):""}
+      <div class="section-h">📬 ${t("rfq_open")} <span style="color:var(--muted);font-weight:600;font-size:13px">(${list.length})</span></div>
+      ${list.length?list.map(r=>`<div class="panel" style="width:auto;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start">
+          <div><div style="font-weight:800;font-size:15px">${r.title}</div>
+            <div style="font-size:12.5px;color:var(--muted)">${r.type} · ${t("rfq_qty")} ${r.qty} m · ${t("rfq_budget")} ≤ ${money(r.budget)}${t("per_m")} · ${t("rfq_by")} ${r.by}</div>
+            ${r.notes?`<div style="font-size:12.5px;margin-top:4px">${r.notes}</div>`:""}</div>
+          <span class="pill ${r.offers.length?'done':'escrow'}">${r.offers.length} ${t("rfq_offers")}</span>
+        </div>
+        ${r.offers.length?`<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">${r.offers.map(o=>`<div style="display:flex;justify-content:space-between;font-size:13px;background:var(--grey);border-radius:8px;padding:8px 10px"><span>🏬 ${o.seller}</span><b style="color:var(--blue)">${money(o.price)}${t("per_m")}</b></div>`).join("")}</div>`:""}
+        <div style="display:flex;gap:8px;margin-top:10px">
+          ${seller?`<button class="btn btn-primary" style="margin-top:0;padding:8px;font-size:13px;width:auto;padding:8px 14px" onclick="sendOffer(${r.id})">💬 ${t("rfq_send_offer")}</button>`:""}
+          <button class="btn btn-ghost" style="margin-top:0;padding:8px 14px;font-size:13px;width:auto" onclick="aiSourceRFQ(${r.id})">${t("rfq_ai_match")}</button>
+        </div>
+      </div>`).join(""):`<div class="empty">${t("rfq_no")}</div>`}
+    </div>
+  </div>`;
+}
+function postRFQ(){
+  const g=id=>document.getElementById(id).value.trim();
+  const title=g("r_title"); if(!title){toast(t("auth_err_fields"));return;}
+  const id=Math.max(0,...state.rfqs.map(r=>r.id))+1;
+  state.rfqs.unshift({id,title,type:g("r_type"),qty:+g("r_qty")||100,budget:+g("r_budget")||0,notes:g("r_notes"),by:state.user?state.user.name:"You",offers:[]});
+  toast(t("rfq_posted")); render();
+}
+function sendOffer(id){
+  const r=state.rfqs.find(x=>x.id===id);
+  showModal(`<h3>${t("rfq_send_offer")}</h3><p class="sub" style="margin:4px 0 12px">${r.title} · ${r.qty} m</p>
+    <label style="font-weight:700;font-size:13px">${t("rfq_your_price")}</label>
+    <input id="o_price" type="number" step="0.1" value="${r.budget||''}" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin:6px 0 14px">
+    <button class="btn btn-primary" onclick="confirmOffer(${id})">${t("send")}</button>
+    <button class="btn btn-ghost" onclick="closeModal()">${t("cancel")}</button>`);
+}
+function confirmOffer(id){
+  const r=state.rfqs.find(x=>x.id===id); const p=+document.getElementById("o_price").value||r.budget;
+  r.offers.push({seller:state.user?state.user.name:"My Mill (You)",price:p});
+  closeModal(); toast(t("rfq_offer_sent")); render();
+}
+function aiMatch(spec){
+  const budget=+spec.budget||Infinity;
+  let m=LISTINGS.filter(x=>x.type===spec.type).sort((a,b)=>a.price-b.price);
+  let ok=m.filter(x=>x.price<=budget); if(!ok.length) ok=m;
+  return ok.slice(0,3);
+}
+function aiSourceFromForm(){
+  const g=id=>document.getElementById(id).value.trim();
+  const spec={title:g("r_title")||g("r_type"),type:g("r_type"),qty:+g("r_qty")||500,budget:+g("r_budget")||0};
+  state.aiSrc={spec,matches:aiMatch(spec)}; render(); window.scrollTo(0,0);
+}
+function aiSourceRFQ(id){
+  const r=state.rfqs.find(x=>x.id===id);
+  state.aiSrc={spec:{title:r.title,type:r.type,qty:r.qty,budget:r.budget},matches:aiMatch(r)}; render(); window.scrollTo(0,0);
+}
+function aiSourcePanel(ai){
+  const s=ai.spec;
+  const draft=t("ai_src_draft").replace("{qty}",s.qty).replace("{title}",s.title).replace("{budget}",money(s.budget||0));
+  return `<div class="ai-cap" style="margin-bottom:16px">
+    <div class="ct">🤖 ${t("ai_src_t")}</div>
+    <div style="font-size:13.5px;opacity:.95;margin-bottom:10px">${ai.matches.length?t("ai_src_s"):t("ai_src_none")}</div>
+    ${ai.matches.length?`<div class="caps">${ai.matches.map(x=>`<div class="cap" style="flex-direction:column;align-items:stretch;gap:6px;cursor:pointer" onclick="openDetail(${x.id})">
+      <div style="font-weight:800">${L(x.title)}</div>
+      <div style="opacity:.9;font-size:12px">🏬 ${x.seller.n} · ★ ${x.seller.r} · <b>${money(x.price)}${t("per_m")}</b> · ${t("moq")} ${x.moq} m</div>
+    </div>`).join("")}</div>
+    <div style="margin-top:12px;background:rgba(255,255,255,.14);border-radius:10px;padding:12px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px">${t("ai_src_msg")}</div>
+      <div style="font-size:13px;font-style:italic">“${draft}”</div>
+      <button class="btn" style="margin-top:10px;background:#fff;color:#4b2ea6;padding:9px;font-size:13px" onclick="contactSeller(${ai.matches[0].id})">💬 ${t("ai_src_send")} → ${ai.matches[0].seller.n}</button>
+    </div>`:""}
+  </div>`;
+}
+
+/* ============ AI Price Watch (world news) ============ */
+const NEWS=[
+  {ic:"🌦️", dir:"up", pct:8, fabric:{en:"Cotton",zh:"棉花",vi:"Cotton"},
+   title:{en:"Drought hits key cotton belts in India & Texas",zh:"印度与德州主要棉区遭遇干旱",vi:"Hạn hán tại các vùng trồng bông chính ở Ấn Độ & Texas"},
+   note:{en:"AI: lower cotton yields expected → raw cotton and cotton fabric prices likely to rise over 4–8 weeks.",zh:"AI：预计棉花减产 → 原棉及棉布价格未来 4–8 周可能上涨。",vi:"AI: sản lượng bông giảm → giá bông thô và vải cotton có thể tăng trong 4–8 tuần."}},
+  {ic:"🛢️", dir:"up", pct:5, fabric:{en:"Polyester",zh:"聚酯",vi:"Polyester"},
+   title:{en:"Oil prices climb on supply cuts",zh:"减产推高油价",vi:"Giá dầu tăng do cắt giảm nguồn cung"},
+   note:{en:"AI: polyester is oil-based, so higher crude usually pushes polyester and blends up.",zh:"AI：聚酯以石油为原料，油价上涨通常带动聚酯及混纺上涨。",vi:"AI: polyester gốc dầu, dầu thô tăng thường kéo giá polyester và vải pha lên."}},
+  {ic:"🚢", dir:"up", pct:3, fabric:{en:"All imports",zh:"所有进口",vi:"Mọi hàng nhập"},
+   title:{en:"Red Sea shipping delays raise freight costs",zh:"红海航运延误推高运费",vi:"Chậm trễ vận tải Biển Đỏ đẩy cước tăng"},
+   note:{en:"AI: longer routes add to landed cost on Asia→Europe fabric shipments; budget extra lead time.",zh:"AI：绕行增加亚洲→欧洲面料到岸成本；请预留更多交期。",vi:"AI: tuyến dài hơn làm tăng chi phí cập cảng Á→Âu; hãy dự trù thêm thời gian."}},
+  {ic:"🇻🇳", dir:"down", pct:2, fabric:{en:"VN textiles",zh:"越南纺织",vi:"Dệt may VN"},
+   title:{en:"EVFTA tariff cuts take effect on more textile lines",zh:"EVFTA 更多纺织品类关税下调生效",vi:"EVFTA giảm thuế thêm nhiều dòng dệt may"},
+   note:{en:"AI: Vietnam-made fabric gets cheaper for EU buyers — a selling advantage for VN sellers.",zh:"AI：越南面料对欧盟买家更便宜——越南卖家的销售优势。",vi:"AI: vải sản xuất tại VN rẻ hơn cho khách EU — lợi thế bán hàng cho người bán VN."}},
+  {ic:"🐛", dir:"up", pct:6, fabric:{en:"Silk",zh:"真丝",vi:"Lụa"},
+   title:{en:"Poor mulberry harvest tightens raw silk supply",zh:"桑叶歉收致生丝供应趋紧",vi:"Mùa dâu tằm kém làm tơ thô khan hiếm"},
+   note:{en:"AI: expect firmer silk prices this season; lock in orders early.",zh:"AI：本季真丝价格预计走强；建议尽早锁单。",vi:"AI: giá lụa dự kiến cứng hơn mùa này; nên chốt đơn sớm."}},
+  {ic:"♻️", dir:"down", pct:4, fabric:{en:"Recycled poly",zh:"再生聚酯",vi:"Poly tái chế"},
+   title:{en:"New recycling capacity boosts rPET supply",zh:"新增回收产能提升 rPET 供应",vi:"Công suất tái chế mới tăng nguồn rPET"},
+   note:{en:"AI: more recycled polyester on the market may ease prices for eco-fabric buyers.",zh:"AI：市场再生聚酯增多，环保面料买家价格或走低。",vi:"AI: nhiều polyester tái chế hơn có thể hạ giá cho người mua vải xanh."}},
+];
+function viewMarket(){
+  return `<h1 class="page">📈 ${t("market_title")}</h1><p class="sub">${t("market_sub")}</p>
+    <div style="font-size:12px;color:var(--muted);margin:-10px 0 16px">🟢 ${t("mkt_updated")}</div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+    ${NEWS.map(n=>`<div class="panel" style="width:auto">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="font-size:26px">${n.ic}</div>
+        <span class="pill ${n.dir==='up'?'escrow':'done'}" style="font-size:12px">${n.dir==='up'?t("mkt_up"):t("mkt_down")} ${n.pct}%</span>
+      </div>
+      <div style="font-weight:700;font-size:14.5px;margin:8px 0 4px">${L(n.title)}</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">${t("mkt_affects")}: <b style="color:var(--text)">${L(n.fabric)}</b></div>
+      <div style="font-size:13px;background:var(--grey);border-radius:8px;padding:10px">${L(n.note)}</div>
+    </div>`).join("")}
+    </div>`;
+}
+
+/* ============ AI assistant (demo) ============ */
+function aiStrip(){
+  if(state.search||Object.values(state.filters).some(Boolean)) return "";
+  const caps=[t("ai_cap1"),t("ai_cap2"),t("ai_cap3"),t("ai_cap4")].map((c,i)=>
+    `<div class="cap"><span>${["🌐","💬","🛡️","🎯"][i]}</span><span>${c}</span></div>`).join("");
+  return `<div class="ai-cap"><div class="ct">${t("ai_cap_t")}</div><div class="caps">${caps}</div></div>`;
+}
+const AI_RESP={
+  en:{
+    fee:"FabriTrade takes a flat 3.5% commission on each completed sale, deducted from the seller's payout. Buyers pay no extra platform fee. On a $1,000 order that's $35 to the platform and $965 to the seller.",
+    find:"Sure! Tell me quantity, fabric type, GSM and budget (e.g. \"2,000m organic cotton jersey, ~180 GSM, under $4/m, low MOQ\") and I'll match you with AI-verified sellers and draft the first message for you.",
+    verify:"This seller is AI-Verified ✓ — I checked their business registration, 312 completed trades, and 4.8★ reviews, and found no fraud signals. Escrow also protects your payment until you confirm delivery.",
+    ship:"For import/export I can pick the right Incoterms (FOB, CIF, DDP), estimate landed cost and duties from the HS code, and auto-generate your commercial invoice and certificate of origin (great for EVFTA/CPTPP tariff benefits).",
+    dispute:"I've got you. Your payment stays safely in escrow. Describe what's wrong and I'll mediate with the seller and recommend a fair outcome — full refund, partial, or release — usually within 24 hours.",
+    hi:"Hi! I'm your FabriTrade AI assistant. I can help you find fabric, translate chats between languages, check whether a seller is trustworthy, guide import/export paperwork, and resolve disputes. What do you need?",
+    def:"I can help with: finding the right fabric, translating messages, verifying sellers, import/export paperwork, pricing, and disputes. Try one of the quick buttons below, or just ask."},
+  zh:{
+    fee:"FabriTrade 对每笔成交收取统一 3.5% 佣金，从卖家收款中扣除，买家无需额外支付平台费。以 1000 美元订单为例，平台收 35 美元，卖家收 965 美元。",
+    find:"没问题！告诉我数量、面料类型、克重和预算（例如“2000米有机棉针织，约180克，单价4美元以下，低起订量”），我会为您匹配 AI 认证卖家并帮您起草第一条消息。",
+    verify:"该卖家已通过 AI 认证 ✓——我已核验其营业执照、312 笔成交记录和 4.8★ 评价，未发现欺诈迹象。托管还会保护您的付款，直到确认收货。",
+    ship:"进出口方面，我可以选择合适的贸易术语（FOB、CIF、DDP），根据 HS 编码估算到岸成本与关税，并自动生成商业发票和原产地证书（有助于享受 EVFTA/CPTPP 关税优惠）。",
+    dispute:"交给我。您的付款安全托管中。请描述问题，我会与卖家协调并给出公允方案——全额退款、部分退款或放款——通常 24 小时内解决。",
+    hi:"您好！我是您的 FabriTrade AI 助手。我可以帮您寻找面料、跨语言翻译对话、核验卖家是否可靠、指导进出口单证并处理纠纷。需要什么帮助？",
+    def:"我可以帮助：寻找面料、翻译消息、认证卖家、进出口单证、定价与纠纷。点击下方快捷按钮，或直接提问。"},
+  vi:{
+    fee:"FabriTrade thu hoa hồng cố định 3,5% trên mỗi giao dịch hoàn tất, trừ vào tiền của người bán. Người mua không trả thêm phí nền tảng. Với đơn 1.000 USD, nền tảng nhận 35 USD và người bán nhận 965 USD.",
+    find:"Được! Cho tôi biết số lượng, loại vải, GSM và ngân sách (ví dụ \"2.000m cotton hữu cơ ~180 GSM, dưới 4 USD/m, MOQ thấp\") và tôi sẽ khớp bạn với người bán đã được AI xác minh và soạn tin nhắn đầu tiên.",
+    verify:"Người bán này đã được AI xác minh ✓ — tôi đã kiểm tra giấy phép kinh doanh, 312 giao dịch hoàn tất và đánh giá 4.8★, không thấy dấu hiệu gian lận. Ký quỹ cũng bảo vệ khoản thanh toán đến khi bạn xác nhận nhận hàng.",
+    ship:"Về xuất nhập khẩu, tôi có thể chọn Incoterms phù hợp (FOB, CIF, DDP), ước tính chi phí và thuế theo mã HS, và tự tạo hóa đơn thương mại cùng chứng nhận xuất xứ (hưởng ưu đãi thuế EVFTA/CPTPP).",
+    dispute:"Có tôi đây. Khoản thanh toán vẫn được giữ ký quỹ an toàn. Hãy mô tả vấn đề, tôi sẽ hòa giải với người bán và đề xuất giải pháp công bằng — hoàn toàn bộ, một phần, hoặc giải ngân — thường trong 24 giờ.",
+    hi:"Chào bạn! Tôi là trợ lý AI của FabriTrade. Tôi có thể giúp tìm vải, dịch trò chuyện giữa các ngôn ngữ, kiểm tra người bán có đáng tin, hướng dẫn giấy tờ xuất nhập khẩu và xử lý tranh chấp. Bạn cần gì?",
+    def:"Tôi có thể giúp: tìm vải phù hợp, dịch tin nhắn, xác minh người bán, giấy tờ xuất nhập khẩu, định giá và tranh chấp. Thử một nút nhanh bên dưới, hoặc cứ hỏi tôi."}
+};
+function aiReply(text){
+  const s=(text||"").toLowerCase(), R=AI_RESP[state.lang]||AI_RESP.en;
+  const has=(...w)=>w.some(x=>s.includes(x));
+  if(has("fee","commission","3.5","佣金","phí","hoa hồng")) return R.fee;
+  if(has("price","news","market","trend","forecast","价格","新闻","行情","giá","tin tức","thị trường"))
+    return {en:"Open the AI Price Watch tab — I scan world news 24/7 and flag events (droughts, oil, freight, tariffs) that move cotton, silk, polyester and more, so you can time your buying.",zh:"请打开“AI 价格监测”标签——我全天候扫描全球新闻，标记影响棉、丝、聚酯等价格的事件（干旱、油价、运费、关税），帮您把握采购时机。",vi:"Mở tab “Theo dõi giá AI” — tôi quét tin tức 24/7 và đánh dấu các sự kiện (hạn hán, dầu, cước, thuế) ảnh hưởng giá cotton, lụa, polyester… để bạn canh thời điểm mua."}[state.lang];
+  if(has("verify","trust","legit","safe","scam check","可靠","认证","信任","xác minh","đáng tin","tin cậy")) return R.verify;
+  if(has("ship","import","export","customs","incoterm","duty","进出口","关税","清关","xuất","nhập","vận chuyển","hải quan")) return R.ship;
+  if(has("dispute","refund","problem","wrong","纠纷","退款","问题","tranh chấp","hoàn tiền","vấn đề")) return R.dispute;
+  if(has("find","cotton","silk","linen","looking","organic","source","找","有机","面料","tìm","hữu cơ","vải")) return R.find;
+  if(has("hi","hello","hey","你好","您好","chào","xin chào")) return R.hi;
+  return R.def;
+}
+let aiMsgs=null;
+function toggleAI(){
+  const p=document.getElementById("aiPanel");
+  if(p.classList.contains("show")){ p.classList.remove("show"); return; }
+  if(!aiMsgs) aiMsgs=[{bot:true,t:aiReply("hi")}];
+  renderAI(); p.classList.add("show");
+}
+function renderAI(){
+  const p=document.getElementById("aiPanel");
+  const chips=[t("ai_chip1"),t("ai_chip2"),t("ai_chip3"),t("ai_chip4")];
+  p.innerHTML=`
+    <div class="ai-head"><div><div class="tt">✨ ${t("ai_title")}</div><div class="ss">${t("ai_sub")}</div></div><div class="x" onclick="toggleAI()">✕</div></div>
+    <div class="ai-msgs" id="aiMsgs">${aiMsgs.map(m=>`<div class="ai-msg ${m.bot?'bot':'me'}">${m.t}</div>`).join("")}</div>
+    <div class="ai-chips">${chips.map(c=>`<div class="ai-chip" onclick="askAI('${c.replace(/'/g,"")}')">${c}</div>`).join("")}</div>
+    <div class="ai-composer"><input id="aiInput" placeholder="${t("ai_ph")}" onkeydown="if(event.key==='Enter')sendAI()">
+      <button class="btn-primary" style="width:auto;padding:0 16px;border-radius:10px" onclick="sendAI()">${t("ai_send")}</button></div>`;
+  const m=document.getElementById("aiMsgs"); if(m)m.scrollTop=m.scrollHeight;
+}
+function askAI(text){ pushAI(text); }
+function sendAI(){ const el=document.getElementById("aiInput"); const v=(el.value||"").trim(); if(!v)return; el.value=""; pushAI(v); }
+function pushAI(text){
+  aiMsgs.push({bot:false,t:text}); renderAI();
+  setTimeout(()=>{ aiMsgs.push({bot:true,t:aiReply(text)}); renderAI(); }, 550);
+}
+
+/* ============ interactive guided tour ============ */
+// Each step explains one part of the app AND navigates to it, so users learn by watching.
+const TOUR=[
+  {k:"tg1", go:()=>{ state.search=""; go("browse"); }},
+  {k:"tg2", go:()=>go("browse")},
+  {k:"tg3", go:()=>{ const x=LISTINGS[0]; if(x) openDetail(x.id); else go("browse"); }},
+  {k:"tg4", go:()=>go("cart")},
+  {k:"tg5", go:()=>{ state.role="seller"; state.editId=null; state.uploadImg=null; go("sell"); }},
+  {k:"tg6", go:()=>{ state.role="seller"; go("store"); }},
+  {k:"tg7", go:()=>go("rfq")},
+  {k:"tg8", go:()=>{ state.threadId=1; go("messages"); }},
+  {k:"tg9", go:()=>go("market")},
+  {k:"tg10", go:()=>{ go("orders"); const f=document.getElementById("aiFab"); if(f){f.classList.remove("pulse"); void f.offsetWidth; f.classList.add("pulse");} }},
+  {k:"tg11", go:()=>go("help")},
+];
+let tourStep=-1;
+function showTour(){ // auto-offer once after first login (skippable)
+  try{ if(localStorage.getItem("ft_tour")) return; }catch(e){}
+  startTour();
+}
+function openTour(){ startTour(); }           // ❓ button
+function startTour(){ tourStep=0; runTourStep(); }
+function runTourStep(){
+  const s=TOUR[tourStep]; if(!s){ endTour(); return; }
+  try{ s.go(); }catch(e){}
+  renderTourCard();
+}
+function renderTourCard(){
+  const s=TOUR[tourStep]; if(!s) return;
+  const card=document.getElementById("tourCard"); if(!card) return;
+  const n=TOUR.length, last=tourStep===n-1;
+  card.innerHTML=`
+    <div class="tc-top"><span class="tc-step">${t("tg_step")} ${tourStep+1} ${t("tg_of")} ${n}</span><span class="tc-x" onclick="endTour()">✕</span></div>
+    <div class="tc-prog"><i style="width:${Math.round((tourStep+1)/n*100)}%"></i></div>
+    <h4>${t(s.k+"t")}</h4><p>${t(s.k)}</p>
+    <div class="tc-btns">
+      ${tourStep>0?`<button class="btn btn-ghost" onclick="tourStep--;runTourStep()">${t("tg_back")}</button>`:""}
+      <span class="sp"></span>
+      ${last?"":`<span class="tc-skip" onclick="endTour()">${t("tg_skip")}</span>`}
+      <button class="btn btn-primary" onclick="${last?'endTour()':'tourStep++;runTourStep()'}">${last?t("tg_done"):t("tg_next")}</button>
+    </div>`;
+  card.classList.add("show");
+}
+function endTour(){ tourStep=-1; const c=document.getElementById("tourCard"); if(c)c.classList.remove("show"); try{localStorage.setItem("ft_tour","1");}catch(e){} }
+
+/* ============ help & FAQ ============ */
+function viewHelp(){
+  const faqs=[1,2,3,4,5,6].map(i=>`<details class="faq"><summary>${t("faq"+i+"q")}</summary><div class="fa">${t("faq"+i+"a")}</div></details>`).join("");
+  return `<h1 class="page">❓ ${t("help_t")}</h1><p class="sub">${t("help_s")}</p>
+    <button class="btn btn-primary" style="width:auto;padding:12px 20px;margin:0 0 22px" onclick="startTour()">▶ ${t("tg_restart")}</button>
+    ${faqs}`;
+}
+
+function showModal(html){ document.getElementById("modal").innerHTML=html; document.getElementById("overlay").classList.add("show"); }
+function closeModal(){ document.getElementById("overlay").classList.remove("show"); }
+let toastTimer;
+function toast(msg){ const e=document.getElementById("toast"); e.textContent=msg; e.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>e.classList.remove("show"),2200); }
+
+/* =====================================================================
+   LIVE MODE — when a FabriTrade server is reachable, the app uses it:
+   real accounts, shared listings/orders/RFQs/messages. Otherwise it stays
+   in demo mode (everything saved in this browser).
+   Set window.FT_API = "https://your-server" to use a server on another domain.
+   ===================================================================== */
+let LIVE=false, SERVER_CFG=null;
+let TOKEN=null; try{ TOKEN=localStorage.getItem("ft_token")||null; }catch(e){}
+const API_BASE=(typeof window!=="undefined" && window.FT_API) ? String(window.FT_API).replace(/\/$/,"") : "";
+async function api(path,method="GET",bodyObj){
+  const headers={"Content-Type":"application/json"}; if(TOKEN) headers["Authorization"]="Bearer "+TOKEN;
+  const res=await fetch(API_BASE+path,{method,headers,body:bodyObj?JSON.stringify(bodyObj):undefined});
+  let data={}; try{ data=await res.json(); }catch(e){}
+  if(!res.ok) throw new Error(data.error||("Server error "+res.status));
+  return data;
+}
+async function detectLive(){
+  try{ const r=await fetch(API_BASE+"/api/health",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&j.mode==="live"){ LIVE=true; SERVER_CFG=j; } }catch(e){}
+}
+function normL(l){
+  return Object.assign({}, l, { title:l.title, origin:l.origin||"", comp:l.comp||"", cert:l.cert||"", inco:l.inco||"FOB", stock:l.stock||"in stock", lead:l.lead||7,
+    seller:{n:l.sellerName||"Seller", r:l.rating||4.8, t:l.trades||0}, grad:sw(l.color||"#cdbfa6", l.color||"#b3a384"),
+    img:l.img||picByType(l.type,l.id), mine:!!(state.user && state.user.id===l.ownerId), featured:!!l.featured });
+}
+function normO(o){ return { id:o.id, title:(o.sample?"🧵 ":"")+o.title, qty:o.qty, total:o.total, comm:o.commission, date:new Date(o.createdAt).toISOString().slice(0,10), status:o.status, step:o.step||1, sample:!!o.sample }; }
+async function liveRefresh(){
+  const [ls,rq]=await Promise.all([api("/api/listings"),api("/api/rfqs")]);
+  LISTINGS=ls.listings.map(normL); state.rfqs=rq.rfqs;
+  try{ state.liveStats=await api("/api/stats"); }catch(e){}
+  if(TOKEN && state.user){
+    try{ const o=await api("/api/my/orders"); state.orders=o.orders.map(normO); }catch(e){}
+    try{ const th=await api("/api/messages/threads"); THREADS.length=0; th.threads.forEach(x=>THREADS.push({id:x.userId,name:x.name,msgs:[{me:false,t:x.lastText,tr:""}]})); }catch(e){}
+    try{ const so=await api("/api/seller/orders"); state.sellerStats=so; }catch(e){}
+  }
+}
+function liveErr(e){ toast(e&&e.message?e.message:"Something went wrong"); }
+
+// --- save/load: in live mode only keep personal preferences locally ---
+const _save=save;
+save=function(){ if(!LIVE) return _save(); try{ localStorage.setItem(LS_KEY, JSON.stringify({lang:state.lang,cur:state.cur,dark:state.dark,role:state.role,cart:state.cart,fav:state.fav,recent:state.recent})); }catch(e){} };
+
+// --- auth ---
+const _doAuth=doAuth;
+doAuth=async function(){
+  if(!LIVE) return _doAuth();
+  const g=id=>{const e=document.getElementById(id);return e?e.value.trim():"";};
+  const email=g("au_email").toLowerCase(), pass=g("au_pass"); state.authErr="";
+  try{
+    let r;
+    if(state.authMode==="signup"){ const name=g("au_name"); if(!name||!email||!pass){state.authErr=t("auth_err_fields");return renderAuth();} if(!validEmail(email)){state.authErr=t("auth_bad_email");return renderAuth();}
+      r=await api("/api/register","POST",{name,email,password:pass,role:state.authRole}); }
+    else { if(!email||!pass){state.authErr=t("auth_err_fields");return renderAuth();} r=await api("/api/login","POST",{email,password:pass}); }
+    TOKEN=r.token; try{localStorage.setItem("ft_token",TOKEN);}catch(e){}
+    state.user={id:r.user.id,name:r.user.name,email:r.user.email,role:r.user.role};
+    await liveRefresh().catch(()=>{});
+    finishAuth(state.user);
+    if(r.owner) setTimeout(()=>toast("👑 You are the platform owner. Use the Manager site to control everything."),2500);
+  }catch(e){ state.authErr=e.message; renderAuth(); }
+};
+const _logout=logout;
+logout=function(){ TOKEN=null; try{localStorage.removeItem("ft_token");}catch(e){} state.orders=[]; THREADS.length=0; _logout(); };
+
+// --- listings ---
+function readListingForm(){ const g=id=>document.getElementById(id).value; return {title:g("s_title")||"New Fabric Listing",type:g("s_type"),comp:g("s_comp"),gsm:+g("s_gsm")||150,width:+g("s_width")||150,price:+g("s_price")||1,moq:+g("s_moq")||50,origin:g("s_origin")||"Vietnam",cert:g("s_cert"),color:g("s_color"),img:state.uploadImg||""}; }
+const _publish=publish;
+publish=async function(){ if(!LIVE) return _publish();
+  try{ const d=readListingForm(); if(!state.uploadImg && !state.editId) d.img=picByType(d.type,Date.now()%1000);
+    if(state.editId){ if(!d.img) delete d.img; await api("/api/listings/"+state.editId,"PUT",d); toast(t("saved_ok")); } else { await api("/api/listings","POST",d); toast(t("listed_ok")); }
+    state.editId=null; state.uploadImg=null; await liveRefresh(); go("store"); }catch(e){ liveErr(e); } };
+const _confirmDelete=confirmDelete;
+confirmDelete=async function(id){ if(!LIVE) return _confirmDelete(id); try{ await api("/api/listings/"+id,"DELETE"); state.cart=state.cart.filter(c=>c.id!==id); state.fav=state.fav.filter(f=>f!==id); closeModal(); toast(t("deleted_ok")); await liveRefresh(); render(); }catch(e){ liveErr(e); } };
+const _confirmBoost=confirmBoost;
+confirmBoost=async function(id){ if(!LIVE) return _confirmBoost(id); try{ await api("/api/listings/"+id+"/boost","POST"); closeModal(); toast(t("boosted")); await liveRefresh(); render(); }catch(e){ liveErr(e); } };
+
+// --- orders ---
+function orderDoneModal(comm){ showModal(`<div class="check">✓</div><h3 style="text-align:center">${t("order_done")}</h3><p class="sub" style="text-align:center;margin:8px 0 18px">${t("order_done_p")}</p><div class="commission-note" style="text-align:center">FabriTrade ${state.lang==='zh'?'佣金':state.lang==='vi'?'hoa hồng':'commission'}: <b style="color:var(--green)">${money(comm)}</b></div><button class="btn btn-primary" onclick="closeModal();go('orders')">${t("great")}</button>`); }
+const _placeOrder=placeOrder;
+placeOrder=async function(id){ if(!LIVE) return _placeOrder(id); try{ const x=LISTINGS.find(l=>l.id===id); const q=state.qty[id]||x.moq; const r=await api("/api/orders","POST",{listingId:id,qty:q}); await liveRefresh(); orderDoneModal(r.order.commission); }catch(e){ liveErr(e); } };
+const _placeSample=placeSample;
+placeSample=async function(id){ if(!LIVE) return _placeSample(id); try{ await api("/api/orders","POST",{listingId:id,sample:true}); closeModal(); toast(t("sample_placed")); await liveRefresh(); go("orders"); }catch(e){ liveErr(e); } };
+const _checkoutCart=checkoutCart;
+checkoutCart=async function(){ if(!LIVE) return _checkoutCart(); try{ let comm=0; for(const c of state.cart){ const r=await api("/api/orders","POST",{listingId:c.id,qty:c.qty}); comm+=r.order.commission; } state.cart=[]; await liveRefresh(); orderDoneModal(comm); }catch(e){ liveErr(e); } };
+
+// --- RFQs ---
+const _postRFQ=postRFQ;
+postRFQ=async function(){ if(!LIVE) return _postRFQ(); try{ const g=id=>document.getElementById(id).value.trim(); const title=g("r_title"); if(!title){toast(t("auth_err_fields"));return;}
+  await api("/api/rfqs","POST",{title,type:g("r_type"),qty:+g("r_qty")||100,budget:+g("r_budget")||0,notes:g("r_notes")}); toast(t("rfq_posted")); await liveRefresh(); render(); }catch(e){ liveErr(e); } };
+const _confirmOffer=confirmOffer;
+confirmOffer=async function(id){ if(!LIVE) return _confirmOffer(id); try{ const p=+document.getElementById("o_price").value; await api("/api/rfqs/"+id+"/offers","POST",{price:p}); closeModal(); toast(t("rfq_offer_sent")); await liveRefresh(); render(); }catch(e){ liveErr(e); } };
+
+// --- messages ---
+async function openThread(uid){ state.threadId=uid; try{ const m=await api("/api/messages?withUserId="+uid); const th=THREADS.find(x=>x.id===uid); if(th){ th.msgs=[]; m.messages.forEach(x=>{ th.msgs.push({me:x.mine,t:x.text,tr:""}); if(x.flagged) th.msgs.push({ai:true}); }); if(!th.msgs.length) th.msgs.push({me:false,t:"…",tr:""}); } }catch(e){} render(); scrollChat(); }
+const _contactSeller=contactSeller;
+contactSeller=async function(listingId){ if(!LIVE) return _contactSeller(listingId);
+  try{ const r=await api("/api/users/lookup?listingId="+listingId); const uid=r.user.id;
+    if(state.user && uid===state.user.id){ toast("This is your own listing."); return; }
+    if(!THREADS.find(x=>x.id===uid)) THREADS.unshift({id:uid,name:r.user.name,msgs:[{me:false,t:"…",tr:""}]});
+    state.view="messages"; toast(t("contacted")); await openThread(uid); }catch(e){ liveErr(e); } };
+const _sendMsg=sendMsg;
+sendMsg=async function(){ if(!LIVE) return _sendMsg();
+  const el=document.getElementById("msgInput"); const v=el.value.trim(); if(!v||!state.threadId)return;
+  try{ el.value=""; await api("/api/messages","POST",{toId:state.threadId,text:v}); await openThread(state.threadId); }catch(e){ liveErr(e); } };
+const _viewMessages=viewMessages;
+viewMessages=function(){ if(!LIVE) return _viewMessages();
+  const th=THREADS.find(x=>x.id===state.threadId)||THREADS[0];
+  if(!th) return `<h1 class="page">${t("chat_title")}</h1><div class="empty">${t("no_thread")}</div>`;
+  return `<h1 class="page">${t("chat_title")}</h1><div class="sub">&nbsp;</div>
+  <div class="chat-wrap"><div class="threads">${THREADS.map(x=>`<div class="thread ${x.id===th.id?'active':''}" onclick="openThread(${x.id})"><div class="n">${x.name}</div><div class="last">${(x.msgs[x.msgs.length-1]||{}).t||""}</div></div>`).join("")}</div>
+    <div class="chat"><div class="head"><strong>${th.name}</strong><label class="toggle"><input type="checkbox" ${state.translate?'checked':''} onchange="state.translate=this.checked;render()"> 🌐 ${t("translate")}</label></div>
+      <div class="ai-mod">🛡️ ${t("ai_mod")}</div>
+      <div class="msgs" id="msgs">${th.msgs.map(m=> m.ai?`<div class="msg-ai">${t("ai_mod_warn")}</div>`:`<div class="msg ${m.me?'me':'them'}">${escapeHtml(m.t)}</div>`).join("")}</div>
+      <div class="composer"><input id="msgInput" placeholder="${t("type_msg")}" onkeydown="if(event.key==='Enter')sendMsg()"><button class="btn-primary" style="width:auto;padding:0 20px;border-radius:10px" onclick="sendMsg()">${t("send")}</button></div>
+    </div></div>`; };
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// --- stats band, dashboard, announcement ---
+const _statsBand=statsBand;
+statsBand=function(){ if(!LIVE) return _statsBand();
+  if(state.search||Object.values(state.filters).some(Boolean)) return "";
+  const s=state.liveStats||{}; const ann=SERVER_CFG&&SERVER_CFG.announcement?`<div class="ai-mod" style="border-radius:12px;margin-bottom:14px;font-size:13px">📣 ${escapeHtml(SERVER_CFG.announcement)}</div>`:"";
+  const items=[[String(s.users||0),t("sp_traders")],["50+",t("sp_countries")],[money(s.gmv||0).replace(/\.00$/,""),t("sp_gmv")],["4.8★",t("sp_rating")]];
+  return ann+`<div class="statband">${items.map(x=>`<div class="s"><div class="n">${x[0]}</div><div class="l">${x[1]}</div></div>`).join("")}</div>`; };
+const _viewDash=viewDash;
+viewDash=function(){ if(!LIVE) return _viewDash();
+  const so=state.sellerStats||{orders:[],revenue:0,commission:0}; const gmv=so.orders.reduce((s,o)=>s+o.total,0);
+  return `<h1 class="page">${t("dash_title")}</h1><p class="sub">${t("dash_sub")}</p>
+  <div class="stats">
+    <div class="stat"><div class="lbl">${t("d_gmv")}</div><div class="val">${money(gmv)}</div></div>
+    <div class="stat"><div class="lbl">${state.lang==='zh'?'您的实收':state.lang==='vi'?'Bạn nhận':'Your payouts'}</div><div class="val green">${money(so.revenue)}</div></div>
+    <div class="stat"><div class="lbl">${t("d_comm")}</div><div class="val">${money(so.commission)}</div></div>
+    <div class="stat"><div class="lbl">${t("d_orders")}</div><div class="val">${so.orders.length}</div></div>
+  </div>
+  ${so.orders.length?`<table class="data"><tr><th>${t("t_order")}</th><th>${t("t_buyer")}</th><th>${t("t_value")}</th><th>${t("t_comm")}</th><th>${t("t_status")}</th></tr>
+  ${so.orders.map(o=>`<tr><td>#${o.id} ${escapeHtml(o.title)}</td><td>${escapeHtml(o.buyerName||"")}</td><td>${money(o.total)}</td><td style="color:var(--green);font-weight:700">${money(o.commission)}</td><td><span class="pill ${o.status==='released'?'done':'escrow'}">${o.status==='released'?t("st_done"):t("st_escrow")}</span></td></tr>`).join("")}</table>`:`<div class="empty">${t("ord_empty")}</div>`}`; };
+
+/* ---------- start ---------- */
+(async function start(){
+  document.body.classList.toggle("dark", state.dark);
+  window.addEventListener("scroll",()=>{const b=document.getElementById("toTop");if(b)b.classList.toggle("show",window.scrollY>500);});
+  await detectLive();
+  load();
+  if(LIVE){
+    state.user=null;
+    if(TOKEN){ try{ const me=await api("/api/me"); state.user={id:me.user.id,name:me.user.name,email:me.user.email,role:me.user.role}; state.role=me.user.role==="owner"?"seller":(me.user.role||"buyer"); }catch(e){ TOKEN=null; try{localStorage.removeItem("ft_token");}catch(e2){} } }
+    try{ await liveRefresh(); }catch(e){ console.warn("live refresh failed",e); }
+  } else {
+    try{ state.user=JSON.parse(localStorage.getItem("ft_user")||"null"); }catch(e){}
+  }
+  let seenIntro=false; try{ seenIntro=!!localStorage.getItem("ft_intro"); }catch(e){}
+  if(state.user){ if(state.user.role && !LIVE) state.role=state.user.role; render(); showTour(); }
+  else if(!seenIntro){ showIntro(); }
+  else { showAuth(); }
+})();
+</script>
+</body>
+</html>

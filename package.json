@@ -1,0 +1,12 @@
+{
+  "name": "fabritrade",
+  "version": "1.0.0",
+  "description": "FabriTrade — a real fabric marketplace (buy, sell, trade) with accounts, orders, messaging and a 3.5% commission.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
