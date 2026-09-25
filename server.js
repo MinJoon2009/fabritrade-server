@@ -11,7 +11,12 @@ const path = require("path");
 const crypto = require("crypto");
 
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, "data.json");
+// On Render with a persistent disk, set DATA_DIR=/var/data so data survives restarts and deploys.
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
+const DATA_FILE = path.join(DATA_DIR, "data.json");
+// Optional: OWNER_EMAIL locks platform ownership to this email (recommended).
+const OWNER_EMAIL = (process.env.OWNER_EMAIL || "").toLowerCase().trim();
 const PUBLIC = path.join(__dirname, "public");
 
 /* ---------- database ---------- */
@@ -81,7 +86,9 @@ async function api(req, res, url){
     if (db.users.some(u => u.email === email)) return send(res, 409, { error:"An account with that email already exists." });
     const { salt, hash } = hashPassword(b.password);
     // The first REAL account (not a demo seed) becomes the platform owner.
-    const isFirst = !db.users.some(u => u.role === "owner") && db.users.filter(u => !u.seed).length === 0;
+    const isFirst = OWNER_EMAIL
+      ? (email === OWNER_EMAIL && !db.users.some(u => u.role === "owner"))
+      : (!db.users.some(u => u.role === "owner") && db.users.filter(u => !u.seed).length === 0);
     const user = { id: nextId("user"), name: String(b.name).slice(0,80), email, salt, hash,
       role: isFirst ? "owner" : (b.role === "seller" ? "seller" : "buyer"), verified: isFirst, suspended:false, country: b.country||"", createdAt: now() };
     db.users.push(user); if (isFirst) logAdmin("Owner account created: " + email); saveDB();
