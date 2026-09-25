@@ -19,27 +19,59 @@ const DATA_FILE = path.join(DATA_DIR, "data.json");
 const OWNER_EMAIL = (process.env.OWNER_EMAIL || "").toLowerCase().trim();
 const PUBLIC = path.join(__dirname, "public");
 
-/* ---------- database ---------- */
-let db;
-function loadDB(){ try { return JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); } catch { return null; } }
-function saveDB(){ fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2)); }
-db = loadDB();
-if (!db) {
-  db = {
-    secret: crypto.randomBytes(32).toString("hex"),
-    seq: { user:0, listing:0, order:0, message:0, rfq:0, flag:0 },
-    settings: { commission:3.5, boostFee:9.99, sampleFee:5, requireVerify:false, maintenance:false, announcement:"", autoFlag:true },
-    revenue: { commission:0, boosts:0 },
-    users:[], listings:[], orders:[], messages:[], rfqs:[], flags:[], log:[],
-  };
-  seed(); saveDB();
+/* ---------- database ----------
+   Storage, in order of preference:
+   1) Upstash Redis (free cloud database) — set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.
+      Survives restarts even on Render's FREE plan.
+   2) A local file data.json (in DATA_DIR) — survives restarts only with a persistent disk. */
+const UP_URL = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/\/$/, "");
+const UP_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || "";
+const UP_KEY = process.env.UPSTASH_KEY || "fabritrade:db";
+const USE_UPSTASH = !!(UP_URL && UP_TOKEN);
+async function upstash(cmd){
+  const r = await fetch(UP_URL, { method:"POST", headers:{ Authorization:"Bearer " + UP_TOKEN, "Content-Type":"application/json" }, body: JSON.stringify(cmd) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.error) throw new Error("Upstash: " + (j.error || r.status));
+  return j.result;
 }
-// backfill for older data files
-db.settings = Object.assign({ commission:3.5, boostFee:9.99, sampleFee:5, requireVerify:false, maintenance:false, announcement:"", autoFlag:true }, db.settings||{});
-db.revenue = db.revenue || { commission:0, boosts:0 };
-["rfqs","flags","log"].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
-["rfq","flag"].forEach(k=>{ if(!db.seq[k]) db.seq[k]=0; });
-if (!db.users.some(u=>u.role==="owner")) { /* first real signup will become owner */ }
+let db;
+function loadFile(){ try { return JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); } catch { return null; } }
+let cloudTimer = null, cloudDirty = false, cloudBusy = false;
+async function pushCloud(){
+  if (cloudBusy) { cloudDirty = true; return; }
+  cloudBusy = true; cloudDirty = false;
+  try { await upstash(["SET", UP_KEY, JSON.stringify(db)]); }
+  catch (e) { console.error("Cloud save failed, will retry:", e.message); cloudDirty = true; }
+  cloudBusy = false;
+  if (cloudDirty) { clearTimeout(cloudTimer); cloudTimer = setTimeout(pushCloud, 1500); }
+}
+function saveDB(){
+  try { fs.writeFileSync(DATA_FILE, JSON.stringify(db)); } catch {}
+  if (USE_UPSTASH) { clearTimeout(cloudTimer); cloudTimer = setTimeout(pushCloud, 300); }
+}
+async function initDB(){
+  if (USE_UPSTASH) {
+    try { const raw = await upstash(["GET", UP_KEY]); if (raw) db = JSON.parse(raw); console.log("Loaded data from Upstash:", db ? "yes" : "empty"); }
+    catch (e) { console.error("Could not reach Upstash:", e.message); }
+  }
+  if (!db) db = loadFile();
+  if (!db) {
+    db = {
+      secret: crypto.randomBytes(32).toString("hex"),
+      seq: { user:0, listing:0, order:0, message:0, rfq:0, flag:0 },
+      settings: { commission:3.5, boostFee:9.99, sampleFee:5, requireVerify:false, maintenance:false, announcement:"", autoFlag:true },
+      revenue: { commission:0, boosts:0 },
+      users:[], listings:[], orders:[], messages:[], rfqs:[], flags:[], log:[],
+    };
+    seed();
+  }
+  // backfill for older data
+  db.settings = Object.assign({ commission:3.5, boostFee:9.99, sampleFee:5, requireVerify:false, maintenance:false, announcement:"", autoFlag:true }, db.settings||{});
+  db.revenue = db.revenue || { commission:0, boosts:0 };
+  ["rfqs","flags","log"].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
+  ["rfq","flag"].forEach(k=>{ if(!db.seq[k]) db.seq[k]=0; });
+  saveDB();
+}
 
 function nextId(k){ return (db.seq[k] = (db.seq[k]||0) + 1); }
 function now(){ return Date.now(); }
@@ -286,11 +318,15 @@ function serveStatic(req, res, url){
   });
 }
 
-http.createServer((req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  if (url.pathname.startsWith("/api/")) return api(req, res, url).catch(e => send(res, 500, { error: String(e) }));
-  serveStatic(req, res, url);
-}).listen(PORT, () => console.log(`FabriTrade server running →  http://localhost:${PORT}`));
+initDB().then(() => {
+  http.createServer((req, res) => {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    if (url.pathname.startsWith("/api/")) return api(req, res, url).catch(e => send(res, 500, { error: String(e) }));
+    serveStatic(req, res, url);
+  }).listen(PORT, () => console.log(`FabriTrade server running →  http://localhost:${PORT}  (storage: ${USE_UPSTASH ? "Upstash cloud" : DATA_FILE})`));
+});
+// save any last changes before Render shuts the server down
+process.on("SIGTERM", async () => { if (USE_UPSTASH) { clearTimeout(cloudTimer); try { await upstash(["SET", UP_KEY, JSON.stringify(db)]); } catch {} } process.exit(0); });
 
 /* ---------- demo seed (sellers + fabrics so the shop isn't empty) ---------- */
 function seed(){
