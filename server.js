@@ -157,26 +157,67 @@ function extractJSON(text){
 /* ---- AI Price Watch: real news, refreshed automatically ---- */
 let newsBusy = null;
 const tri = v => (v && typeof v === "object") ? { en: String(v.en || ""), zh: String(v.zh || v.en || ""), vi: String(v.vi || v.en || "") } : { en: String(v || ""), zh: String(v || ""), vi: String(v || "") };
+/* Free headlines from Google News RSS (no key, no quota). */
+const NEWS_QUERIES = [["cotton prices", "Cotton"], ["oil prices polyester", "Polyester"], ["textile tariffs Vietnam", "VN textiles"],
+  ["container shipping freight rates", "All imports"], ["silk prices", "Silk"], ["textile industry garment exports", "All fabrics"]];
+const NEWS_FEED = process.env.NEWS_FEED_BASE || "https://news.google.com/rss/search";
+const unxml = s => String(s || "").replace(/<!\[CDATA\[|\]\]>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/<[^>]+>/g, "").trim();
+async function fetchHeadlines(){
+  const out = [], seen = new Set();
+  await Promise.all(NEWS_QUERIES.map(async ([q, fabric]) => {
+    try {
+      const r = await fetch(NEWS_FEED + "?q=" + encodeURIComponent(q + " when:14d") + "&hl=en-US&gl=US&ceid=US:en", { headers: { "User-Agent": "Mozilla/5.0 FabriTrade" } });
+      if (!r.ok) return;
+      const xml = await r.text();
+      (xml.match(/<item>[\s\S]*?<\/item>/g) || []).slice(0, 4).forEach(it => {
+        const g = tag => { const m = it.match(new RegExp("<" + tag + "[^>]*>([\\s\\S]*?)<\\/" + tag + ">")); return m ? unxml(m[1]) : ""; };
+        let title = g("title"); const source = g("source") || (title.includes(" - ") ? title.split(" - ").pop() : "");
+        if (source && title.endsWith(" - " + source)) title = title.slice(0, -(source.length + 3));
+        const key = title.toLowerCase().slice(0, 60); if (!title || seen.has(key)) return; seen.add(key);
+        const d = new Date(g("pubDate")); out.push({ title, source, url: g("link"), date: isNaN(d) ? "" : d.toISOString().slice(0, 10), fabric, q });
+      });
+    } catch (e) { console.error("Headline fetch failed (" + q + "):", e.message); }
+  }));
+  return out.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+}
+/* Simple backup if the AI is unavailable: guess direction from the headline words. */
+function basicItem(h){
+  const t = h.title.toLowerCase();
+  const up = /(rise|rises|rising|surge|jump|soar|climb|higher|hike|spike|tariff|shortage|drought|disrupt|delay|strike|record high|increase)/.test(t);
+  const down = /(fall|falls|drop|slump|plunge|lower|decline|cut|ease|eases|cheaper|surplus|glut|slide|weak)/.test(t);
+  const dir = down && !up ? "down" : "up";
+  const note = { en: "Headline only (AI summary unavailable right now). Tap the source to read more.", zh: "仅标题（AI 摘要暂不可用）。点击来源查看详情。", vi: "Chỉ có tiêu đề (tóm tắt AI tạm thời không có). Bấm nguồn để đọc thêm." };
+  return { dir, pct: 0, fabric: tri(h.fabric), title: tri(h.title), note, source: h.source, date: h.date, url: h.url };
+}
 async function refreshNews(reason){
-  if (!GEMINI_KEY) return null;
   if (newsBusy) return newsBusy;
   newsBusy = (async () => {
     try {
-      const today = new Date().toISOString().slice(0, 10);
-      const prompt = `Today is ${today}. Use Google Search to find 6 real, recent news stories (from the last 2 weeks) that are likely to move textile and fabric prices: cotton crops and futures, oil prices (polyester/nylon), silk, wool, linen, shipping/freight costs, tariffs and trade deals (especially involving Vietnam, China, the US and EU), currency moves, and factory or labor news in Asia.
-For each story give a short buyer-friendly price outlook. Reply with ONLY a JSON array, no other text. Each item:
-{"dir":"up" or "down","pct":<estimated % price impact, integer 1-15>,"fabric":{"en":"...","zh":"...","vi":"..."},"title":{"en":"...","zh":"...","vi":"..."},"note":{"en":"AI: one or two sentences on what it means for fabric buyers/sellers","zh":"...","vi":"..."},"source":"publication name","date":"YYYY-MM-DD"}
-zh = Simplified Chinese, vi = Vietnamese. Only use real stories you found.`;
-      const r = await gemini(prompt, { search: true, maxTokens: 4096 });
-      const arr = extractJSON(r.text);
-      if (!Array.isArray(arr) || !arr.length) throw new Error("AI returned no usable news");
-      const items = arr.slice(0, 8).map((n, i) => ({
-        dir: n.dir === "down" ? "down" : "up", pct: Math.max(1, Math.min(30, Math.round(+n.pct || 3))),
-        fabric: tri(n.fabric), title: tri(n.title), note: tri(n.note),
-        source: String(n.source || "").slice(0, 80), date: String(n.date || "").slice(0, 10),
-        url: (r.sources[i] && r.sources[i].url) || "" })).filter(n => n.title.en);
-      db.news = { items, updated: now(), model: r.model, sources: r.sources.slice(0, 12), error: "" };
-      logAdmin("AI Price Watch updated (" + items.length + " stories" + (reason ? ", " + reason : "") + ")");
+      const heads = (await fetchHeadlines()).slice(0, 18);
+      if (!heads.length) throw new Error("Couldn't load news headlines");
+      let items = null, model = "", aiErr = "";
+      if (GEMINI_KEY) {
+        try {
+          const list = heads.map((h, i) => `${i}. [${h.fabric}] ${h.title} (${h.source}, ${h.date})`).join("\n");
+          const prompt = `Today is ${new Date().toISOString().slice(0, 10)}. Below are recent news headlines. Pick the 6 that matter most for textile and fabric prices (cotton, polyester/oil, silk, linen, freight, tariffs and trade especially Vietnam/China/US/EU). For each give a short buyer-friendly price outlook.
+Headlines:
+${list}
+Reply with ONLY a JSON array, no other text. Each item:
+{"i":<headline number>,"dir":"up" or "down","pct":<estimated % price impact, integer 1-15>,"fabric":{"en":"...","zh":"...","vi":"..."},"title":{"en":"short headline","zh":"...","vi":"..."},"note":{"en":"AI: one or two sentences on what it means for fabric buyers/sellers","zh":"...","vi":"..."}}
+zh = Simplified Chinese, vi = Vietnamese. Base everything only on the headlines given.`;
+          const r = await gemini(prompt, { maxTokens: 4096 });
+          const arr = extractJSON(r.text);
+          if (!Array.isArray(arr) || !arr.length) throw new Error("AI returned no usable news");
+          items = arr.slice(0, 8).map(n => { const h = heads[+n.i] || {}; return {
+            dir: n.dir === "down" ? "down" : "up", pct: Math.max(1, Math.min(30, Math.round(+n.pct || 3))),
+            fabric: tri(n.fabric || h.fabric), title: tri(n.title || h.title), note: tri(n.note),
+            source: String(h.source || "").slice(0, 80), date: h.date || "", url: h.url || "" }; }).filter(n => n.title.en);
+          model = r.model;
+        } catch (e) { aiErr = e.message; console.error("AI summary failed, showing headlines only:", e.message.slice(0, 300)); }
+      }
+      if (!items || !items.length) items = heads.slice(0, 6).map(basicItem);
+      db.news = { items, updated: now(), model, basic: !model, error: aiErr ? "AI summary unavailable: " + aiErr.slice(0, 300) : "" };
+      logAdmin("Price Watch updated (" + items.length + " stories, " + (model ? "AI summary" : "headlines only") + (reason ? ", " + reason : "") + ")");
       saveDB(); return db.news;
     } catch (e) {
       console.error("News refresh failed:", e.message);
@@ -186,7 +227,7 @@ zh = Simplified Chinese, vi = Vietnamese. Only use real stories you found.`;
   })();
   return newsBusy;
 }
-function newsStale(){ const n = db.news || {}; const last = Math.max(n.updated || 0, n.tried || 0); return now() - last > NEWS_HOURS * 3600e3; }
+function newsStale(){ const n = db.news || {}; const last = Math.max(n.updated || 0, n.tried || 0); const hrs = (n.basic && GEMINI_KEY) ? Math.min(2, NEWS_HOURS) : NEWS_HOURS; return now() - last > hrs * 3600e3; }
 
 /* ---- AI assistant (rate-limited so the free quota lasts) ---- */
 const aiHits = new Map();
@@ -223,7 +264,7 @@ async function api(req, res, url){
   /* ---- AI: Price Watch news + assistant ---- */
   if (p === "/api/news" && m === "GET") {
     const n = db.news || {};
-    if (GEMINI_KEY && newsStale()) {
+    if (newsStale()) {
       const job = refreshNews("auto");
       if (!(n.items && n.items.length)) await Promise.race([job, new Promise(r => setTimeout(r, 25000))]); // first time: wait for it
     }
@@ -425,8 +466,8 @@ async function api(req, res, url){
       if (b.action === "ban") { const t = db.users.find(x => x.id === f.fromId); if (t && t.role !== "owner") t.suspended = true; }
       logAdmin("Moderation: " + f.action + " — " + f.fromName); saveDB(); return send(res, 200, { flag: f });
     }
-    if (sub === "ai" && m === "GET") { const n = db.news || {}; return send(res, 200, { enabled: !!GEMINI_KEY, model: goodModel || n.model || "", news: { count: (n.items||[]).length, updated: n.updated || 0, error: n.error || "", items: n.items || [] }, report: db.aiReport || null }); }
-    if (sub === "ai/news" && m === "POST") { if (!GEMINI_KEY) return send(res, 400, { error: "Add GEMINI_API_KEY on Render first." }); const r = await refreshNews("manual"); return r ? send(res, 200, { news: r }) : send(res, 502, { error: "Refresh failed: " + ((db.news||{}).error || "unknown") }); }
+    if (sub === "ai" && m === "GET") { const n = db.news || {}; return send(res, 200, { enabled: !!GEMINI_KEY, model: goodModel || n.model || "", news: { count: (n.items||[]).length, updated: n.updated || 0, error: n.error || "", basic: !!n.basic, items: n.items || [] }, report: db.aiReport || null }); }
+    if (sub === "ai/news" && m === "POST") { const r = await refreshNews("manual"); return r ? send(res, 200, { news: r }) : send(res, 502, { error: "Refresh failed: " + ((db.news||{}).error || "unknown") }); }
     if (sub === "ai/report" && m === "POST") { if (!GEMINI_KEY) return send(res, 400, { error: "Add GEMINI_API_KEY on Render first." }); try { return send(res, 200, { report: await ownerReport() }); } catch (e) { return send(res, 502, { error: "AI report failed: " + e.message }); } }
     if (sub === "settings" && m === "GET") return send(res, 200, { settings: S });
     if (sub === "settings" && m === "PUT") {
@@ -463,7 +504,7 @@ initDB().then(() => {
     serveStatic(req, res, url);
   }).listen(PORT, () => console.log(`FabriTrade server running →  http://localhost:${PORT}  (storage: ${USE_UPSTASH ? "Upstash cloud" : DATA_FILE})  (AI: ${GEMINI_KEY ? "Gemini on" : "off — add GEMINI_API_KEY"})`));
   // keep Price Watch fresh while the server is awake (it also refreshes when someone opens the page)
-  if (GEMINI_KEY) { if (newsStale()) refreshNews("startup"); setInterval(() => { if (newsStale()) refreshNews("scheduled"); }, 30 * 60e3).unref(); }
+  { if (newsStale()) refreshNews("startup"); setInterval(() => { if (newsStale()) refreshNews("scheduled"); }, 30 * 60e3).unref(); }
 });
 // save any last changes before Render shuts the server down
 process.on("SIGTERM", async () => { if (USE_UPSTASH) { clearTimeout(cloudTimer); try { await upstash(["SET", UP_KEY, JSON.stringify(db)]); } catch {} } process.exit(0); });
