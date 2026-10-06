@@ -100,7 +100,7 @@ function riskReason(text){ const s = String(text).toLowerCase(); const hit = RIS
    Set GEMINI_API_KEY on Render. Optional: GEMINI_MODEL, NEWS_HOURS (default 8).
    Without a key, everything keeps working with the built-in demo answers/news. */
 const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODELS = [process.env.GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"].filter(Boolean);
+const GEMINI_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
 const NEWS_HOURS = +process.env.NEWS_HOURS || 8;
 const GEMINI_BASE = (process.env.GEMINI_BASE || "https://generativelanguage.googleapis.com").replace(/\/$/, "");
 let goodModel = null;
@@ -110,22 +110,41 @@ async function gemini(prompt, { search = false, system = "", maxTokens = 2048 } 
   const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens } };
   if (system) payload.systemInstruction = { parts: [{ text: system }] };
   if (search) payload.tools = [{ google_search: {} }];
-  const tryList = goodModel ? [goodModel, ...GEMINI_MODELS.filter(x => x !== goodModel)] : GEMINI_MODELS;
-  let lastErr;
-  for (const model of [...new Set(tryList)]) {
+  const found = await discoverModels();
+  const tryList = [goodModel, process.env.GEMINI_MODEL, ...found, ...GEMINI_MODELS].filter(Boolean);
+  const errs = [];
+  for (const model of [...new Set(tryList)].slice(0, 6)) {
     try {
       const r = await fetch(GEMINI_BASE + "/v1beta/models/" + model + ":generateContent", {
         method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY }, body: JSON.stringify(payload) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) { lastErr = new Error(model + ": " + ((j.error && j.error.message) || r.status)); if (r.status === 429 || r.status === 404 || r.status === 400) continue; throw lastErr; }
+      if (!r.ok) { errs.push(model + ": " + String((j.error && j.error.message) || r.status).slice(0, 160)); if (goodModel === model) goodModel = null; continue; }
       const c = (j.candidates || [])[0] || {};
       const text = ((c.content && c.content.parts) || []).map(x => x.text || "").join("").trim();
       const sources = (((c.groundingMetadata || {}).groundingChunks) || []).map(g => g.web).filter(Boolean).map(w => ({ title: w.title || "", url: w.uri || "" }));
       goodModel = model;
       return { text, sources, model };
-    } catch (e) { lastErr = e; }
+    } catch (e) { errs.push(model + ": " + e.message); }
   }
-  throw lastErr || new Error("AI unavailable");
+  throw new Error(errs.length ? errs.join(" | ") : "AI unavailable");
+}
+/* Ask Google which models this key can use (models get retired, so don't hard-code). */
+let modelCache = null, modelCacheAt = 0;
+async function discoverModels(){
+  if (modelCache && now() - modelCacheAt < 12 * 3600e3) return modelCache;
+  try {
+    const r = await fetch(GEMINI_BASE + "/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": GEMINI_KEY } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { console.error("Gemini model list failed:", (j.error && j.error.message) || r.status); return []; }
+    const ver = n => { const m = n.match(/gemini-(\d+(?:\.\d+)?)/); return m ? +m[1] : 0; };
+    const bad = /image|tts|audio|live|embed|vision|robotics|computer|native|exp|learnlm|gemma/i;
+    const list = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map(m => String(m.name || "").replace(/^models\//, "")).filter(n => /^gemini-/.test(n) && /flash/.test(n) && !bad.test(n));
+    const score = n => ver(n) * 10 - (/preview/.test(n) ? 3 : 0) - (/lite/.test(n) ? 1 : 0) - (/-\d{3,}$|latest/.test(n) ? 0.5 : 0);
+    modelCache = list.sort((a, b) => score(b) - score(a)).slice(0, 5); modelCacheAt = now();
+    console.log("Gemini models available:", modelCache.join(", ") || "(none)");
+    return modelCache;
+  } catch (e) { console.error("Gemini model list failed:", e.message); return []; }
 }
 function extractJSON(text){
   const s = String(text || "").replace(/```json|```/g, "");
