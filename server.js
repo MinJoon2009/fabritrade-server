@@ -81,20 +81,48 @@ function logAdmin(msg){ db.log.unshift({ t: now(), m: msg }); db.log = db.log.sl
 /* ---------- auth helpers ---------- */
 function hashPassword(password, salt){ salt = salt || crypto.randomBytes(16).toString("hex"); return { salt, hash: crypto.scryptSync(password, salt, 64).toString("hex") }; }
 function checkPassword(p, salt, hash){ try { return crypto.timingSafeEqual(Buffer.from(crypto.scryptSync(p, salt, 64).toString("hex")), Buffer.from(hash)); } catch { return false; } }
-function makeToken(id){ const body = id + "." + now(); const sig = crypto.createHmac("sha256", db.secret).update(body).digest("hex"); return Buffer.from(body + "." + sig).toString("base64"); }
-function userFromToken(tok){ try { const [id, ts, sig] = Buffer.from(tok, "base64").toString("utf8").split("."); const ok = crypto.createHmac("sha256", db.secret).update(id + "." + ts).digest("hex") === sig; return ok ? db.users.find(u => u.id === +id) || null : null; } catch { return null; } }
+/* Login tokens: signed, expire after 30 days, and stop working if the password changes (tokenVer bumps). */
+const TOKEN_DAYS = 30, ADMIN_HOURS = 12;
+function makeToken(id){ const u = db.users.find(x => x.id === id); const body = id + "." + now() + "." + ((u && u.tokenVer) || 0); const sig = crypto.createHmac("sha256", db.secret).update(body).digest("hex"); return Buffer.from(body + "." + sig).toString("base64"); }
+function readToken(tok){
+  try {
+    const parts = Buffer.from(String(tok || ""), "base64").toString("utf8").split(".");
+    let id, ts, ver, sig;
+    if (parts.length === 4) [id, ts, ver, sig] = parts; else if (parts.length === 3) { [id, ts, sig] = parts; ver = null; } else return null; // 3 parts = older login, still honoured until it expires
+    const body = ver === null ? id + "." + ts : id + "." + ts + "." + ver;
+    const good = crypto.createHmac("sha256", db.secret).update(body).digest("hex");
+    if (good.length !== sig.length || !crypto.timingSafeEqual(Buffer.from(good), Buffer.from(sig))) return null;
+    if (now() - +ts > TOKEN_DAYS * 864e5 || +ts > now() + 6e4) return null;
+    const u = db.users.find(x => x.id === +id); if (!u) return null;
+    if ((+ver || 0) !== (u.tokenVer || 0)) return null;
+    return { user: u, age: now() - +ts };
+  } catch { return null; }
+}
+function userFromToken(tok){ const r = readToken(tok); return r ? r.user : null; }
+// pub = what a user sees about THEMSELVES (and the owner sees in the Manager). others = what other users may see (no email).
 const pub = u => u && ({ id:u.id, name:u.name, email:u.email, role:u.role, verified:!!u.verified, suspended:!!u.suspended, country:u.country||"" });
+const publicUser = u => u && ({ id:u.id, name:u.name, role:u.role === "owner" ? "seller" : u.role, verified:!!u.verified, country:u.country||"" });
 
 /* ---------- http helpers ---------- */
 function cors(res){ res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization"); res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS"); }
 function send(res, code, obj){ cors(res); res.writeHead(code, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); }
 function body(req){ return new Promise(r => { let d = ""; req.on("data", c => { d += c; if (d.length > 8e6) req.destroy(); }); req.on("end", () => { try { r(d ? JSON.parse(d) : {}); } catch { r({}); } }); }); }
-function auth(req){ return userFromToken((req.headers["authorization"]||"").replace(/^Bearer\s+/i, "")); }
+function bearer(req){ return (req.headers["authorization"]||"").replace(/^Bearer\s+/i, ""); }
+function auth(req){ const u = userFromToken(bearer(req)); return u && !u.suspended ? u : null; }
 function listingOut(l){ const s = db.users.find(u => u.id === l.ownerId); return { ...l, sellerName: s ? s.name : "Unknown", sellerVerified: !!(s && s.verified), rating: l.rating || 4.8, trades: db.orders.filter(o => o.sellerId === l.ownerId && o.status !== "refunded").length }; }
 
 /* ---------- AI scam flagging (rule-based; swap for an AI API later) ---------- */
 const RISKY = ["bank wire","bank transfer","wire transfer","western union","whatsapp","wechat","telegram","zalo","paypal","off platform","off-platform","offline","skip the fee","skip the platform","account number","iban","转账","银行","线下","微信","私下","chuyển khoản","ngoài nền tảng","ngân hàng"];
-function riskReason(text){ const s = String(text).toLowerCase(); const hit = RISKY.find(w => s.includes(w)); return hit ? "Off-platform payment / contact attempt (\"" + hit + "\")" : null; }
+function riskReason(text){
+  const s = String(text).toLowerCase(); const hit = RISKY.find(w => s.includes(w));
+  if (hit) return "Off-platform payment / contact attempt (\"" + hit + "\")";
+  if (/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(s)) return "Shared an email address (off-platform contact)";
+  if ((s.match(/\+?\d[\d\s().-]{7,}\d/g) || []).some(x => x.replace(/\D/g, "").length >= 9)) return "Shared a phone number (off-platform contact)";
+  return null;
+}
+/* simple per-user rate limit for messages */
+const msgHits = new Map();
+function msgAllowed(id){ const t = now(), arr = (msgHits.get(id) || []).filter(x => t - x < 60e3); if (arr.length >= 30) return false; arr.push(t); msgHits.set(id, arr); return true; }
 
 /* ================= Real AI (Google Gemini, free tier) =================
    Set GEMINI_API_KEY on Render. Optional: GEMINI_MODEL, NEWS_HOURS (default 8).
@@ -253,6 +281,8 @@ async function api(req, res, url){
   const p = url.pathname, m = req.method;
   if (m === "OPTIONS") { cors(res); res.writeHead(204); return res.end(); }
   const S = db.settings;
+  // Suspended accounts are blocked everywhere, immediately — even on devices that are already logged in.
+  { const t = bearer(req); if (t) { const r = readToken(t); if (r && r.user.suspended && p !== "/api/health") return send(res, 403, { error:"This account is suspended. Contact support.", suspended:true }); } }
 
   /* ---- public ---- */
   if (p === "/api/health") return send(res, 200, { ok:true, mode:"live", maintenance:S.maintenance, announcement:S.announcement, commission:S.commission, boostFee:S.boostFee, sampleFee:S.sampleFee });
@@ -308,6 +338,18 @@ async function api(req, res, url){
     if (!user || !checkPassword(b.password||"", user.salt, user.hash)) return send(res, 401, { error:"Wrong email or password." });
     if (user.suspended) return send(res, 403, { error:"This account is suspended. Contact support." });
     return send(res, 200, { token: makeToken(user.id), user: pub(user) });
+  }
+  if (p === "/api/password" && m === "POST") {
+    const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
+    const b = await body(req);
+    if (!checkPassword(b.oldPassword||"", u.salt, u.hash)) return send(res, 401, { error:"Your current password is wrong." });
+    if (String(b.newPassword||"").length < 6) return send(res, 400, { error:"New password must be at least 6 characters." });
+    const { salt, hash } = hashPassword(b.newPassword); u.salt = salt; u.hash = hash; u.tokenVer = (u.tokenVer || 0) + 1; // logs out every other device
+    saveDB(); return send(res, 200, { ok:true, token: makeToken(u.id) });
+  }
+  if (p === "/api/logout-all" && m === "POST") {
+    const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
+    u.tokenVer = (u.tokenVer || 0) + 1; saveDB(); return send(res, 200, { ok:true });
   }
   if (p === "/api/me") { const u = auth(req); return u ? send(res, 200, { user: pub(u) }) : send(res, 401, { error:"Not logged in." }); }
 
@@ -393,7 +435,9 @@ async function api(req, res, url){
   /* ---- messages (with AI moderation) ---- */
   if (p === "/api/messages" && m === "POST") {
     const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
+    if (!msgAllowed(u.id)) return send(res, 429, { error:"You're sending messages too fast. Please wait a minute." });
     const b = await body(req); if (!b.toId || !b.text) return send(res, 400, { error:"Recipient and text required." });
+    if (+b.toId === u.id) return send(res, 400, { error:"You can't message yourself." });
     const to = db.users.find(x => x.id === +b.toId); if (!to) return send(res, 404, { error:"Recipient not found." });
     const text = String(b.text).slice(0, 2000);
     const reason = S.autoFlag ? riskReason(text) : null;
@@ -407,7 +451,7 @@ async function api(req, res, url){
     const w = +url.searchParams.get("withUserId");
     const msgs = db.messages.filter(x => (x.fromId===u.id && x.toId===w) || (x.fromId===w && x.toId===u.id)).sort((a,b)=>a.createdAt-b.createdAt).map(x => ({ ...x, mine: x.fromId===u.id }));
     const other = db.users.find(x => x.id === w);
-    return send(res, 200, { messages: msgs, with: other ? pub(other) : null });
+    return send(res, 200, { messages: msgs, with: other ? publicUser(other) : null });
   }
   if (p === "/api/messages/threads" && m === "GET") {
     const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
@@ -418,12 +462,15 @@ async function api(req, res, url){
   }
   if (p === "/api/users/lookup" && m === "GET") { // find a user id by listing (to start a chat)
     const id = +url.searchParams.get("listingId"); const l = db.listings.find(x => x.id === id);
-    return l ? send(res, 200, { user: pub(db.users.find(x => x.id === l.ownerId)) }) : send(res, 404, { error:"Not found." });
+    return l ? send(res, 200, { user: publicUser(db.users.find(x => x.id === l.ownerId)) }) : send(res, 404, { error:"Not found." });
   }
 
   /* ---- OWNER / ADMIN API (used by the Manager site) ---- */
   if (p.startsWith("/api/admin/")) {
-    const u = auth(req); if (!u || u.role !== "owner") return send(res, 403, { error:"Owner access only." });
+    const tk = readToken(bearer(req));
+    if (!tk) return send(res, 401, { error:"Session expired. Please log in again.", expired:true });
+    const u = tk.user; if (u.role !== "owner" || u.suspended) return send(res, 403, { error:"Owner access only." });
+    if (tk.age > ADMIN_HOURS * 3600e3) return send(res, 401, { error:"Manager session expired (12 hours). Please log in again.", expired:true });
     const sub = p.replace("/api/admin/", "");
     if (sub === "overview" && m === "GET") {
       const done = db.orders.filter(o => o.status !== "refunded");
@@ -437,7 +484,7 @@ async function api(req, res, url){
     if (sub.match(/^users\/\d+$/)) {
       const t = db.users.find(x => x.id === +sub.split("/")[1]); if (!t) return send(res, 404, { error:"User not found." });
       if (m === "DELETE") { if (t.role === "owner") return send(res, 400, { error:"Can't delete the owner." }); db.users = db.users.filter(x => x !== t); logAdmin("Deleted user " + t.email); saveDB(); return send(res, 200, { ok:true }); }
-      const b = await body(req); ["verified","suspended"].forEach(k => { if (b[k] !== undefined) t[k] = !!b[k]; }); if (b.role && ["buyer","seller"].includes(b.role) && t.role !== "owner") t.role = b.role;
+      const b = await body(req); if (t.role === "owner" && b.suspended) return send(res, 400, { error:"Can't suspend the owner." }); ["verified","suspended"].forEach(k => { if (b[k] !== undefined) t[k] = !!b[k]; }); if (b.suspended) t.tokenVer = (t.tokenVer || 0) + 1; if (b.role && ["buyer","seller"].includes(b.role) && t.role !== "owner") t.role = b.role;
       logAdmin("Updated user " + t.email + " " + JSON.stringify(b)); saveDB(); return send(res, 200, { user: pub(t) });
     }
     if (sub === "listings" && m === "GET") return send(res, 200, { listings: db.listings.map(listingOut) });
@@ -463,7 +510,7 @@ async function api(req, res, url){
     if (sub.match(/^flags\/\d+$/) && m === "PUT") {
       const f = db.flags.find(x => x.id === +sub.split("/")[1]); if (!f) return send(res, 404, { error:"Not found." });
       const b = await body(req); f.done = true; f.action = b.action || "dismissed";
-      if (b.action === "ban") { const t = db.users.find(x => x.id === f.fromId); if (t && t.role !== "owner") t.suspended = true; }
+      if (b.action === "ban") { const t = db.users.find(x => x.id === f.fromId); if (t && t.role !== "owner") { t.suspended = true; t.tokenVer = (t.tokenVer || 0) + 1; } }
       logAdmin("Moderation: " + f.action + " — " + f.fromName); saveDB(); return send(res, 200, { flag: f });
     }
     if (sub === "ai" && m === "GET") { const n = db.news || {}; return send(res, 200, { enabled: !!GEMINI_KEY, model: goodModel || n.model || "", news: { count: (n.items||[]).length, updated: n.updated || 0, error: n.error || "", basic: !!n.basic, items: n.items || [] }, report: db.aiReport || null }); }
