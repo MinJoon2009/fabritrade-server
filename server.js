@@ -96,6 +96,98 @@ function listingOut(l){ const s = db.users.find(u => u.id === l.ownerId); return
 const RISKY = ["bank wire","bank transfer","wire transfer","western union","whatsapp","wechat","telegram","zalo","paypal","off platform","off-platform","offline","skip the fee","skip the platform","account number","iban","转账","银行","线下","微信","私下","chuyển khoản","ngoài nền tảng","ngân hàng"];
 function riskReason(text){ const s = String(text).toLowerCase(); const hit = RISKY.find(w => s.includes(w)); return hit ? "Off-platform payment / contact attempt (\"" + hit + "\")" : null; }
 
+/* ================= Real AI (Google Gemini, free tier) =================
+   Set GEMINI_API_KEY on Render. Optional: GEMINI_MODEL, NEWS_HOURS (default 8).
+   Without a key, everything keeps working with the built-in demo answers/news. */
+const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODELS = [process.env.GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"].filter(Boolean);
+const NEWS_HOURS = +process.env.NEWS_HOURS || 8;
+const GEMINI_BASE = (process.env.GEMINI_BASE || "https://generativelanguage.googleapis.com").replace(/\/$/, "");
+let goodModel = null;
+
+async function gemini(prompt, { search = false, system = "", maxTokens = 2048 } = {}){
+  if (!GEMINI_KEY) throw new Error("No GEMINI_API_KEY set");
+  const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens } };
+  if (system) payload.systemInstruction = { parts: [{ text: system }] };
+  if (search) payload.tools = [{ google_search: {} }];
+  const tryList = goodModel ? [goodModel, ...GEMINI_MODELS.filter(x => x !== goodModel)] : GEMINI_MODELS;
+  let lastErr;
+  for (const model of [...new Set(tryList)]) {
+    try {
+      const r = await fetch(GEMINI_BASE + "/v1beta/models/" + model + ":generateContent", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY }, body: JSON.stringify(payload) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { lastErr = new Error(model + ": " + ((j.error && j.error.message) || r.status)); if (r.status === 429 || r.status === 404 || r.status === 400) continue; throw lastErr; }
+      const c = (j.candidates || [])[0] || {};
+      const text = ((c.content && c.content.parts) || []).map(x => x.text || "").join("").trim();
+      const sources = (((c.groundingMetadata || {}).groundingChunks) || []).map(g => g.web).filter(Boolean).map(w => ({ title: w.title || "", url: w.uri || "" }));
+      goodModel = model;
+      return { text, sources, model };
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("AI unavailable");
+}
+function extractJSON(text){
+  const s = String(text || "").replace(/```json|```/g, "");
+  const a = s.indexOf("["), b = s.lastIndexOf("]");
+  const o = s.indexOf("{"), e = s.lastIndexOf("}");
+  for (const [x, y] of [[a, b], [o, e]]) { if (x >= 0 && y > x) { try { return JSON.parse(s.slice(x, y + 1)); } catch {} } }
+  return null;
+}
+
+/* ---- AI Price Watch: real news, refreshed automatically ---- */
+let newsBusy = null;
+const tri = v => (v && typeof v === "object") ? { en: String(v.en || ""), zh: String(v.zh || v.en || ""), vi: String(v.vi || v.en || "") } : { en: String(v || ""), zh: String(v || ""), vi: String(v || "") };
+async function refreshNews(reason){
+  if (!GEMINI_KEY) return null;
+  if (newsBusy) return newsBusy;
+  newsBusy = (async () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const prompt = `Today is ${today}. Use Google Search to find 6 real, recent news stories (from the last 2 weeks) that are likely to move textile and fabric prices: cotton crops and futures, oil prices (polyester/nylon), silk, wool, linen, shipping/freight costs, tariffs and trade deals (especially involving Vietnam, China, the US and EU), currency moves, and factory or labor news in Asia.
+For each story give a short buyer-friendly price outlook. Reply with ONLY a JSON array, no other text. Each item:
+{"dir":"up" or "down","pct":<estimated % price impact, integer 1-15>,"fabric":{"en":"...","zh":"...","vi":"..."},"title":{"en":"...","zh":"...","vi":"..."},"note":{"en":"AI: one or two sentences on what it means for fabric buyers/sellers","zh":"...","vi":"..."},"source":"publication name","date":"YYYY-MM-DD"}
+zh = Simplified Chinese, vi = Vietnamese. Only use real stories you found.`;
+      const r = await gemini(prompt, { search: true, maxTokens: 4096 });
+      const arr = extractJSON(r.text);
+      if (!Array.isArray(arr) || !arr.length) throw new Error("AI returned no usable news");
+      const items = arr.slice(0, 8).map((n, i) => ({
+        dir: n.dir === "down" ? "down" : "up", pct: Math.max(1, Math.min(30, Math.round(+n.pct || 3))),
+        fabric: tri(n.fabric), title: tri(n.title), note: tri(n.note),
+        source: String(n.source || "").slice(0, 80), date: String(n.date || "").slice(0, 10),
+        url: (r.sources[i] && r.sources[i].url) || "" })).filter(n => n.title.en);
+      db.news = { items, updated: now(), model: r.model, sources: r.sources.slice(0, 12), error: "" };
+      logAdmin("AI Price Watch updated (" + items.length + " stories" + (reason ? ", " + reason : "") + ")");
+      saveDB(); return db.news;
+    } catch (e) {
+      console.error("News refresh failed:", e.message);
+      db.news = Object.assign({ items: [] }, db.news || {}, { error: e.message, tried: now() }); saveDB();
+      return null;
+    } finally { newsBusy = null; }
+  })();
+  return newsBusy;
+}
+function newsStale(){ const n = db.news || {}; const last = Math.max(n.updated || 0, n.tried || 0); return now() - last > NEWS_HOURS * 3600e3; }
+
+/* ---- AI assistant (rate-limited so the free quota lasts) ---- */
+const aiHits = new Map();
+function aiAllowed(key){ const t = now(), arr = (aiHits.get(key) || []).filter(x => t - x < 3600e3); if (arr.length >= 20) return false; arr.push(t); aiHits.set(key, arr); return true; }
+const ASSIST_SYSTEM = `You are the FabriTrade assistant. FabriTrade (fabritrade.net) is an online marketplace for buying, selling and trading fabric between Vietnam and the world, for both businesses and small buyers. Facts: anyone with an account can buy and sell; sellers list fabric with photos, price per metre, MOQ (minimum order) and bulk price breaks (5x MOQ = 8% off, 20x MOQ = 15% off); buyers can order samples; payment is held in escrow until the buyer confirms delivery; the platform takes a 3.5% commission from the seller on each sale; buyers can post an RFQ (request for quote) and sellers send offers; sellers can boost listings to Featured; the Price Watch page shows news that affects fabric prices; never pay or chat outside the platform (that is how scams happen). Help with fabric types, GSM, sourcing, pricing, shipping/Incoterms, customs and how to use the site. Be brief (under 120 words), friendly and practical. Reply in the user's language. If unsure, say so. Never invent specific sellers, prices or orders.`;
+
+/* ---- AI owner report for the Manager ---- */
+async function ownerReport(){
+  const done = db.orders.filter(o => o.status !== "refunded"); const week = now() - 7 * 864e5;
+  const facts = { users: db.users.length, newUsers7d: db.users.filter(u => (u.createdAt || 0) > week).length, listings: db.listings.length,
+    orders: done.length, orders7d: done.filter(o => (o.createdAt || 0) > week).length, gmv: +done.reduce((s, o) => s + o.total, 0).toFixed(2),
+    commissionEarned: +(db.revenue.commission || 0).toFixed(2), inEscrow: db.orders.filter(o => o.status === "in_escrow").length,
+    openFlags: db.flags.filter(f => !f.done).map(f => ({ from: f.fromName, reason: f.reason })).slice(0, 10),
+    unverifiedSellers: db.users.filter(x => x.role !== "buyer" && !x.verified).length, openRfqs: db.rfqs.filter(r => !r.closed).length,
+    hiddenListings: db.listings.filter(l => l.hidden).length, newsHeadlines: ((db.news || {}).items || []).map(n => n.title.en) };
+  const r = await gemini("Here is today's data for my fabric marketplace FabriTrade (I'm the owner):\n" + JSON.stringify(facts) +
+    "\nWrite a short owner briefing in simple English: 1) how the business is doing, 2) up to 5 things I should do today (most important first: scam flags, unverified sellers, stuck orders), 3) one growth idea based on the news. Use short bullet points, under 180 words. No markdown headings.", { maxTokens: 1024 });
+  db.aiReport = { text: r.text, at: now() }; saveDB(); return db.aiReport;
+}
+
 /* ================= API ================= */
 async function api(req, res, url){
   const p = url.pathname, m = req.method;
@@ -107,6 +199,30 @@ async function api(req, res, url){
   if (p === "/api/stats") {
     const done = db.orders.filter(o => o.status !== "refunded");
     return send(res, 200, { users: db.users.length, listings: db.listings.length, orders: done.length, gmv: +done.reduce((s,o)=>s+o.total,0).toFixed(2), countries: 50 });
+  }
+
+  /* ---- AI: Price Watch news + assistant ---- */
+  if (p === "/api/news" && m === "GET") {
+    const n = db.news || {};
+    if (GEMINI_KEY && newsStale()) {
+      const job = refreshNews("auto");
+      if (!(n.items && n.items.length)) await Promise.race([job, new Promise(r => setTimeout(r, 25000))]); // first time: wait for it
+    }
+    const cur = db.news || {};
+    return send(res, 200, { ai: !!GEMINI_KEY, items: cur.items || [], updated: cur.updated || 0, sources: cur.sources || [] });
+  }
+  if (p === "/api/ai/chat" && m === "POST") {
+    if (!GEMINI_KEY) return send(res, 503, { error: "AI not configured", fallback: true });
+    const b = await body(req); const msg = String(b.message || "").slice(0, 1000).trim();
+    if (!msg) return send(res, 400, { error: "Empty message." });
+    const who = auth(req); const key = who ? "u" + who.id : (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?").split(",")[0];
+    if (!aiAllowed(key)) return send(res, 429, { error: "Too many questions — please try again in a bit.", fallback: true });
+    const hist = Array.isArray(b.history) ? b.history.slice(-6).map(h => (h.bot ? "Assistant: " : "User: ") + String(h.t || "").slice(0, 400)).join("\n") : "";
+    const lang = { zh: "Simplified Chinese", vi: "Vietnamese" }[b.lang] || "the user's language";
+    try {
+      const r = await gemini((hist ? "Conversation so far:\n" + hist + "\n\n" : "") + "User: " + msg + "\n(Reply in " + lang + ".)", { system: ASSIST_SYSTEM, maxTokens: 600 });
+      return send(res, 200, { reply: r.text || "Sorry, I couldn't answer that." });
+    } catch (e) { console.error("AI chat failed:", e.message); return send(res, 502, { error: "AI busy", fallback: true }); }
   }
 
   /* ---- auth ---- */
@@ -290,6 +406,9 @@ async function api(req, res, url){
       if (b.action === "ban") { const t = db.users.find(x => x.id === f.fromId); if (t && t.role !== "owner") t.suspended = true; }
       logAdmin("Moderation: " + f.action + " — " + f.fromName); saveDB(); return send(res, 200, { flag: f });
     }
+    if (sub === "ai" && m === "GET") { const n = db.news || {}; return send(res, 200, { enabled: !!GEMINI_KEY, model: goodModel || n.model || "", news: { count: (n.items||[]).length, updated: n.updated || 0, error: n.error || "", items: n.items || [] }, report: db.aiReport || null }); }
+    if (sub === "ai/news" && m === "POST") { if (!GEMINI_KEY) return send(res, 400, { error: "Add GEMINI_API_KEY on Render first." }); const r = await refreshNews("manual"); return r ? send(res, 200, { news: r }) : send(res, 502, { error: "Refresh failed: " + ((db.news||{}).error || "unknown") }); }
+    if (sub === "ai/report" && m === "POST") { if (!GEMINI_KEY) return send(res, 400, { error: "Add GEMINI_API_KEY on Render first." }); try { return send(res, 200, { report: await ownerReport() }); } catch (e) { return send(res, 502, { error: "AI report failed: " + e.message }); } }
     if (sub === "settings" && m === "GET") return send(res, 200, { settings: S });
     if (sub === "settings" && m === "PUT") {
       const b = await body(req);
@@ -323,7 +442,9 @@ initDB().then(() => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (url.pathname.startsWith("/api/")) return api(req, res, url).catch(e => send(res, 500, { error: String(e) }));
     serveStatic(req, res, url);
-  }).listen(PORT, () => console.log(`FabriTrade server running →  http://localhost:${PORT}  (storage: ${USE_UPSTASH ? "Upstash cloud" : DATA_FILE})`));
+  }).listen(PORT, () => console.log(`FabriTrade server running →  http://localhost:${PORT}  (storage: ${USE_UPSTASH ? "Upstash cloud" : DATA_FILE})  (AI: ${GEMINI_KEY ? "Gemini on" : "off — add GEMINI_API_KEY"})`));
+  // keep Price Watch fresh while the server is awake (it also refreshes when someone opens the page)
+  if (GEMINI_KEY) { if (newsStale()) refreshNews("startup"); setInterval(() => { if (newsStale()) refreshNews("scheduled"); }, 30 * 60e3).unref(); }
 });
 // save any last changes before Render shuts the server down
 process.on("SIGTERM", async () => { if (USE_UPSTASH) { clearTimeout(cloudTimer); try { await upstash(["SET", UP_KEY, JSON.stringify(db)]); } catch {} } process.exit(0); });
