@@ -59,16 +59,16 @@ async function initDB(){
     db = {
       secret: crypto.randomBytes(32).toString("hex"),
       seq: { user:0, listing:0, order:0, message:0, rfq:0, flag:0 },
-      settings: { commission:3.5, boostFee:9.99, sampleFee:5, requireVerify:false, maintenance:false, announcement:"", autoFlag:true },
+      settings: { commission:3.5, boostFee:9.99, sampleFee:5, requireVerify:false, maintenance:false, announcement:"", autoFlag:true, prelaunch:true, launchText:"2027" },
       revenue: { commission:0, boosts:0 },
       users:[], listings:[], orders:[], messages:[], rfqs:[], flags:[], log:[],
     };
     seed();
   }
   // backfill for older data
-  db.settings = Object.assign({ commission:3.5, boostFee:9.99, sampleFee:5, requireVerify:false, maintenance:false, announcement:"", autoFlag:true }, db.settings||{});
+  db.settings = Object.assign({ commission:3.5, boostFee:9.99, sampleFee:5, requireVerify:false, maintenance:false, announcement:"", autoFlag:true, prelaunch:true, launchText:"2027" }, db.settings||{});
   db.revenue = db.revenue || { commission:0, boosts:0 };
-  ["rfqs","flags","log"].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
+  ["rfqs","flags","log","waitlist"].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
   ["rfq","flag"].forEach(k=>{ if(!db.seq[k]) db.seq[k]=0; });
   saveDB();
 }
@@ -101,7 +101,7 @@ function readToken(tok){
 function userFromToken(tok){ const r = readToken(tok); return r ? r.user : null; }
 // pub = what a user sees about THEMSELVES (and the owner sees in the Manager). others = what other users may see (no email).
 const pub = u => u && ({ id:u.id, name:u.name, email:u.email, role:u.role, verified:!!u.verified, suspended:!!u.suspended, country:u.country||"" });
-const publicUser = u => u && ({ id:u.id, name:u.name, role:u.role === "owner" ? "seller" : u.role, verified:!!u.verified, country:u.country||"" });
+const publicUser = u => u && ({ id:u.id, name:u.name, role:u.role === "owner" ? "seller" : u.role, verified:!!u.verified, founding:!!u.founding, country:u.country||"" });
 
 /* ---------- http helpers ---------- */
 function cors(res){ res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization"); res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS"); }
@@ -109,7 +109,7 @@ function send(res, code, obj){ cors(res); res.writeHead(code, { "Content-Type": 
 function body(req){ return new Promise(r => { let d = ""; req.on("data", c => { d += c; if (d.length > 8e6) req.destroy(); }); req.on("end", () => { try { r(d ? JSON.parse(d) : {}); } catch { r({}); } }); }); }
 function bearer(req){ return (req.headers["authorization"]||"").replace(/^Bearer\s+/i, ""); }
 function auth(req){ const u = userFromToken(bearer(req)); return u && !u.suspended ? u : null; }
-function listingOut(l){ const s = db.users.find(u => u.id === l.ownerId); return { ...l, sellerName: s ? s.name : "Unknown", sellerVerified: !!(s && s.verified), rating: l.rating || 4.8, trades: db.orders.filter(o => o.sellerId === l.ownerId && o.status !== "refunded").length }; }
+function listingOut(l){ const s = db.users.find(u => u.id === l.ownerId); return { ...l, sellerName: s ? s.name : "Unknown", sellerVerified: !!(s && s.verified), sellerFounding: !!(s && s.founding), rating: l.rating || 4.8, trades: db.orders.filter(o => o.sellerId === l.ownerId && o.status !== "refunded").length }; }
 
 /* ---------- AI scam flagging (rule-based; swap for an AI API later) ---------- */
 const RISKY = ["bank wire","bank transfer","wire transfer","western union","whatsapp","wechat","telegram","zalo","paypal","off platform","off-platform","offline","skip the fee","skip the platform","account number","iban","转账","银行","线下","微信","私下","chuyển khoản","ngoài nền tảng","ngân hàng"];
@@ -120,6 +120,11 @@ function riskReason(text){
   if ((s.match(/\+?\d[\d\s().-]{7,}\d/g) || []).some(x => x.replace(/\D/g, "").length >= 9)) return "Shared a phone number (off-platform contact)";
   return null;
 }
+/* waitlist helpers */
+const wlHits = new Map();
+function wlAllowed(ip){ const t = now(), arr = (wlHits.get(ip) || []).filter(x => t - x < 3600e3); if (arr.length >= 10) return false; arr.push(t); wlHits.set(ip, arr); return true; }
+function unsubToken(email){ return crypto.createHmac("sha256", db.secret).update("unsub:" + email).digest("hex").slice(0, 24); }
+const PUBLIC_URL = (process.env.PUBLIC_URL || "https://fabritrade-server.onrender.com").replace(/\/$/, "");
 /* simple per-user rate limit for messages */
 const msgHits = new Map();
 function msgAllowed(id){ const t = now(), arr = (msgHits.get(id) || []).filter(x => t - x < 60e3); if (arr.length >= 30) return false; arr.push(t); msgHits.set(id, arr); return true; }
@@ -268,7 +273,7 @@ async function ownerReport(){
   const facts = { users: db.users.length, newUsers7d: db.users.filter(u => (u.createdAt || 0) > week).length, listings: db.listings.length,
     orders: done.length, orders7d: done.filter(o => (o.createdAt || 0) > week).length, gmv: +done.reduce((s, o) => s + o.total, 0).toFixed(2),
     commissionEarned: +(db.revenue.commission || 0).toFixed(2), inEscrow: db.orders.filter(o => o.status === "in_escrow").length,
-    openFlags: db.flags.filter(f => !f.done).map(f => ({ from: f.fromName, reason: f.reason })).slice(0, 10),
+    openFlagReasons: db.flags.filter(f => !f.done).map(f => f.reason).slice(0, 10), // reasons only — no names or message text go to the AI
     unverifiedSellers: db.users.filter(x => x.role !== "buyer" && !x.verified).length, openRfqs: db.rfqs.filter(r => !r.closed).length,
     hiddenListings: db.listings.filter(l => l.hidden).length, newsHeadlines: ((db.news || {}).items || []).map(n => n.title.en) };
   const r = await gemini("Here is today's data for my fabric marketplace FabriTrade (I'm the owner):\n" + JSON.stringify(facts) +
@@ -285,10 +290,32 @@ async function api(req, res, url){
   { const t = bearer(req); if (t) { const r = readToken(t); if (r && r.user.suspended && p !== "/api/health") return send(res, 403, { error:"This account is suspended. Contact support.", suspended:true }); } }
 
   /* ---- public ---- */
-  if (p === "/api/health") return send(res, 200, { ok:true, mode:"live", maintenance:S.maintenance, announcement:S.announcement, commission:S.commission, boostFee:S.boostFee, sampleFee:S.sampleFee });
+  if (p === "/api/health") return send(res, 200, { ok:true, mode:"live", prelaunch:!!S.prelaunch, launchText:S.launchText||"", maintenance:S.maintenance, announcement:S.announcement, commission:S.commission, boostFee:S.boostFee, sampleFee:S.sampleFee });
   if (p === "/api/stats") {
     const done = db.orders.filter(o => o.status !== "refunded");
     return send(res, 200, { users: db.users.length, listings: db.listings.length, orders: done.length, gmv: +done.reduce((s,o)=>s+o.total,0).toFixed(2), countries: 50 });
+  }
+
+  /* ---- Waitlist (launch updates) ---- */
+  if (p === "/api/waitlist" && m === "POST") {
+    const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?").split(",")[0];
+    if (!wlAllowed(ip)) return send(res, 429, { error:"Too many sign-ups from this network. Please try again later." });
+    const b = await body(req);
+    const email = String(b.email || "").toLowerCase().trim().slice(0, 160);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return send(res, 400, { error:"Please enter a valid email." });
+    if (b.consent !== true) return send(res, 400, { error:"Please tick the box to agree to receive launch updates." });
+    const entry = { email, role: ["buyer","seller","both"].includes(b.role) ? b.role : "buyer", country: String(b.country || "").slice(0, 60), fabrics: String(b.fabrics || "").slice(0, 200), lang: ["en","zh","vi"].includes(b.lang) ? b.lang : "en", source: String(b.source || "landing").slice(0, 30) };
+    const old = db.waitlist.find(w => w.email === email);
+    if (old) { Object.assign(old, entry, { updatedAt: now() }); saveDB(); return send(res, 200, { ok:true, already:true }); }
+    db.waitlist.unshift({ id: nextId("wait"), ...entry, consentAt: now(), createdAt: now() }); saveDB();
+    return send(res, 200, { ok:true });
+  }
+  if (p === "/api/waitlist/unsubscribe" && m === "GET") {
+    const email = String(url.searchParams.get("e") || "").toLowerCase().trim(), tok = String(url.searchParams.get("t") || "");
+    const ok = email && tok === unsubToken(email);
+    if (ok) { const before = db.waitlist.length; db.waitlist = db.waitlist.filter(w => w.email !== email); if (db.waitlist.length !== before) { logAdmin("Waitlist unsubscribe: " + email); saveDB(); } }
+    cors(res); res.writeHead(ok ? 200 : 400, { "Content-Type":"text/html; charset=utf-8" });
+    return res.end(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>FabriTrade</title><div style="font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:480px;margin:80px auto;padding:0 20px;color:#0f172a"><h2 style="color:#1f4e79">FabriTrade</h2><p>${ok ? "You have been removed from the FabriTrade waitlist. You won't receive any more launch emails." : "This unsubscribe link is not valid. Email support@fabritrade.net and we'll remove you."}</p><p><a href="https://fabritrade.net" style="color:#1f4e79">fabritrade.net</a></p></div>`);
   }
 
   /* ---- AI: Price Watch news + assistant ---- */
@@ -322,13 +349,15 @@ async function api(req, res, url){
     if (String(b.password).length < 6) return send(res, 400, { error:"Password must be at least 6 characters." });
     const email = String(b.email).toLowerCase().trim();
     if (db.users.some(u => u.email === email)) return send(res, 409, { error:"An account with that email already exists." });
+    if (b.agreeTerms !== true) return send(res, 400, { error:"Please agree to the Terms of Service and Privacy Policy to create an account." });
     const { salt, hash } = hashPassword(b.password);
     // The first REAL account (not a demo seed) becomes the platform owner.
     const isFirst = OWNER_EMAIL
       ? (email === OWNER_EMAIL && !db.users.some(u => u.role === "owner"))
       : (!db.users.some(u => u.role === "owner") && db.users.filter(u => !u.seed).length === 0);
     const user = { id: nextId("user"), name: String(b.name).slice(0,80), email, salt, hash,
-      role: isFirst ? "owner" : (b.role === "seller" ? "seller" : "buyer"), verified: isFirst, suspended:false, country: b.country||"", createdAt: now() };
+      role: isFirst ? "owner" : (b.role === "seller" ? "seller" : "buyer"), verified: isFirst, suspended:false, country: b.country||"", createdAt: now(),
+      termsAcceptedAt: now(), termsVersion: String(b.termsVersion || "1.0").slice(0, 10) }; // record of consent (Terms + Privacy Policy)
     db.users.push(user); if (isFirst) logAdmin("Owner account created: " + email); saveDB();
     return send(res, 200, { token: makeToken(user.id), user: pub(user), owner: isFirst });
   }
@@ -362,6 +391,7 @@ async function api(req, res, url){
     const b = await body(req);
     const l = { id: nextId("listing"), ownerId: u.id, title: String(b.title||"Untitled fabric").slice(0,120), type: b.type||"Cotton", comp: b.comp||"", gsm:+b.gsm||0, width:+b.width||0,
       price:+b.price||0, moq: Math.max(1,+b.moq||1), origin: b.origin||"", cert: b.cert||"", color: b.color||"#cdbfa6", img: b.img||"", inco: b.inco||"FOB", stock: b.stock||"in stock", lead:+b.lead||7, rating:5.0, featured:false, createdAt: now() };
+    if (S.prelaunch && !u.founding) { u.founding = true; logAdmin("Founding seller: " + u.name); }
     db.listings.unshift(l); saveDB(); return send(res, 200, { listing: listingOut(l) });
   }
   if (p.match(/^\/api\/listings\/\d+$/) && (m === "PUT" || m === "DELETE")) {
@@ -378,6 +408,7 @@ async function api(req, res, url){
     const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
     const l = db.listings.find(x => x.id === +p.split("/")[3]); if (!l) return send(res, 404, { error:"Not found." });
     if (l.ownerId !== u.id) return send(res, 403, { error:"Not your listing." });
+    if (S.prelaunch) return send(res, 403, { error:"Paid boosts open at our full launch" + (S.launchText ? " in " + S.launchText : "") + ".", prelaunch:true });
     l.featured = true; l.boostedAt = now(); db.revenue.boosts += +S.boostFee; saveDB();
     return send(res, 200, { listing: listingOut(l), fee: S.boostFee }); // real Stripe charge for the boost fee goes here
   }
@@ -387,6 +418,7 @@ async function api(req, res, url){
   if (p === "/api/orders" && m === "POST") {
     const u = auth(req); if (!u) return send(res, 401, { error:"Please log in to buy." });
     if (S.maintenance && u.role !== "owner") return send(res, 503, { error:"The marketplace is in maintenance mode. Please try again soon." });
+    if (S.prelaunch) return send(res, 403, { error:"Ordering and payments open at our full launch" + (S.launchText ? " in " + S.launchText : "") + ". For now you can browse, message sellers and post requests.", prelaunch:true });
     const b = await body(req);
     const l = db.listings.find(x => x.id === +b.listingId); if (!l) return send(res, 404, { error:"Listing not found." });
     if (l.ownerId === u.id) return send(res, 400, { error:"You can't buy your own listing." });
@@ -477,7 +509,7 @@ async function api(req, res, url){
       return send(res, 200, { settings: S, revenue: { commission:+db.revenue.commission.toFixed(2), boosts:+db.revenue.boosts.toFixed(2) },
         stats: { users: db.users.length, sellers: db.users.filter(x=>x.role!=="buyer").length, listings: db.listings.length, featured: db.listings.filter(x=>x.featured).length,
           orders: done.length, gmv:+done.reduce((s,o)=>s+o.total,0).toFixed(2), escrow:+db.orders.filter(o=>o.status==="in_escrow").reduce((s,o)=>s+o.total,0).toFixed(2),
-          shipped: db.orders.filter(o=>o.status==="shipped").length, openRfqs: db.rfqs.filter(r=>!r.closed).length, openFlags: db.flags.filter(f=>!f.done).length, unverified: db.users.filter(x=>x.role!=="buyer"&&!x.verified).length },
+          shipped: db.orders.filter(o=>o.status==="shipped").length, openRfqs: db.rfqs.filter(r=>!r.closed).length, openFlags: db.flags.filter(f=>!f.done).length, waitlist: db.waitlist.length, unverified: db.users.filter(x=>x.role!=="buyer"&&!x.verified).length },
         log: db.log.slice(0, 50) });
     }
     if (sub === "users" && m === "GET") return send(res, 200, { users: db.users.map(pub).map(x => ({ ...x, risk: db.flags.some(f => !f.done && f.fromId === x.id) })) });
@@ -516,11 +548,14 @@ async function api(req, res, url){
     if (sub === "ai" && m === "GET") { const n = db.news || {}; return send(res, 200, { enabled: !!GEMINI_KEY, model: goodModel || n.model || "", news: { count: (n.items||[]).length, updated: n.updated || 0, error: n.error || "", basic: !!n.basic, items: n.items || [] }, report: db.aiReport || null }); }
     if (sub === "ai/news" && m === "POST") { const r = await refreshNews("manual"); return r ? send(res, 200, { news: r }) : send(res, 502, { error: "Refresh failed: " + ((db.news||{}).error || "unknown") }); }
     if (sub === "ai/report" && m === "POST") { if (!GEMINI_KEY) return send(res, 400, { error: "Add GEMINI_API_KEY on Render first." }); try { return send(res, 200, { report: await ownerReport() }); } catch (e) { return send(res, 502, { error: "AI report failed: " + e.message }); } }
+    if (sub === "waitlist" && m === "GET") return send(res, 200, { waitlist: db.waitlist.map(w => ({ ...w, unsubscribe: PUBLIC_URL + "/api/waitlist/unsubscribe?e=" + encodeURIComponent(w.email) + "&t=" + unsubToken(w.email) })) });
+    if (sub.match(/^waitlist\/\d+$/) && m === "DELETE") { const id = +sub.split("/")[1]; const w = db.waitlist.find(x => x.id === id); if (!w) return send(res, 404, { error:"Not found." }); db.waitlist = db.waitlist.filter(x => x !== w); logAdmin("Removed from waitlist: " + w.email); saveDB(); return send(res, 200, { ok:true }); }
     if (sub === "settings" && m === "GET") return send(res, 200, { settings: S });
     if (sub === "settings" && m === "PUT") {
       const b = await body(req);
       ["commission","boostFee","sampleFee"].forEach(k => { if (b[k] !== undefined) S[k] = +b[k]; });
-      ["requireVerify","maintenance","autoFlag"].forEach(k => { if (b[k] !== undefined) S[k] = !!b[k]; });
+      ["requireVerify","maintenance","autoFlag","prelaunch"].forEach(k => { if (b[k] !== undefined) S[k] = !!b[k]; });
+      if (b.launchText !== undefined) S.launchText = String(b.launchText).slice(0, 40);
       if (b.announcement !== undefined) S.announcement = String(b.announcement).slice(0, 300);
       logAdmin("Settings updated " + JSON.stringify(b)); saveDB(); return send(res, 200, { settings: S });
     }
