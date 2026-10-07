@@ -307,7 +307,7 @@ async function api(req, res, url){
     const entry = { email, role: ["buyer","seller","both"].includes(b.role) ? b.role : "buyer", country: String(b.country || "").slice(0, 60), fabrics: String(b.fabrics || "").slice(0, 200), lang: ["en","zh","vi"].includes(b.lang) ? b.lang : "en", source: String(b.source || "landing").slice(0, 30) };
     const old = db.waitlist.find(w => w.email === email);
     if (old) { Object.assign(old, entry, { updatedAt: now() }); saveDB(); return send(res, 200, { ok:true, already:true }); }
-    db.waitlist.unshift({ id: nextId("wait"), ...entry, consentAt: now(), createdAt: now() }); saveDB();
+    db.waitlist.unshift({ id: nextId("wait"), ...entry, consentAt: now(), consentText: String(b.consentText || "waitlist-v1").slice(0, 20), createdAt: now() }); saveDB();
     return send(res, 200, { ok:true });
   }
   if (p === "/api/waitlist/unsubscribe" && m === "GET") {
