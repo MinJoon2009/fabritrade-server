@@ -68,7 +68,8 @@ async function initDB(){
   // backfill for older data
   db.settings = Object.assign({ commission:3.5, boostFee:9.99, sampleFee:5, requireVerify:false, maintenance:false, announcement:"", autoFlag:true, prelaunch:true, launchText:"2027" }, db.settings||{});
   db.revenue = db.revenue || { commission:0, boosts:0 };
-  ["rfqs","flags","log","waitlist"].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
+  ["rfqs","flags","log","waitlist","swatches","submissions"].forEach(k=>{ if(!Array.isArray(db[k])) db[k]=[]; });
+  if (!db.stats || typeof db.stats !== "object") db.stats = {};
   ["rfq","flag"].forEach(k=>{ if(!db.seq[k]) db.seq[k]=0; });
   saveDB();
 }
@@ -104,12 +105,12 @@ const pub = u => u && ({ id:u.id, name:u.name, email:u.email, role:u.role, verif
 const publicUser = u => u && ({ id:u.id, name:u.name, role:u.role === "owner" ? "seller" : u.role, verified:!!u.verified, founding:!!u.founding, country:u.country||"" });
 
 /* ---------- http helpers ---------- */
-function cors(res){ res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization"); res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS"); }
+function cors(res){ res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization"); res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS"); }
 function send(res, code, obj){ cors(res); res.writeHead(code, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); }
 function body(req){ return new Promise(r => { let d = ""; req.on("data", c => { d += c; if (d.length > 8e6) req.destroy(); }); req.on("end", () => { try { r(d ? JSON.parse(d) : {}); } catch { r({}); } }); }); }
 function bearer(req){ return (req.headers["authorization"]||"").replace(/^Bearer\s+/i, ""); }
 function auth(req){ const u = userFromToken(bearer(req)); return u && !u.suspended ? u : null; }
-function listingOut(l){ const s = db.users.find(u => u.id === l.ownerId); return { ...l, sellerName: s ? s.name : "Unknown", sellerVerified: !!(s && s.verified), sellerFounding: !!(s && s.founding), rating: l.rating || 4.8, trades: db.orders.filter(o => o.sellerId === l.ownerId && o.status !== "refunded").length }; }
+function listingOut(l){ const s = db.users.find(u => u.id === l.ownerId); return { ...l, rating: undefined, sellerName: l.displaySeller || (s ? s.name : "Unknown"), sellerVerified: l.displaySeller ? !!l.displayVerified : !!(s && s.verified), sellerFounding: l.displaySeller ? true : !!(s && s.founding), trades: db.orders.filter(o => o.sellerId === l.ownerId && o.status !== "refunded").length }; }
 
 /* ---------- AI scam flagging (rule-based; swap for an AI API later) ---------- */
 const RISKY = ["bank wire","bank transfer","wire transfer","western union","whatsapp","wechat","telegram","zalo","paypal","off platform","off-platform","offline","skip the fee","skip the platform","account number","iban","转账","银行","线下","微信","私下","chuyển khoản","ngoài nền tảng","ngân hàng"];
@@ -125,6 +126,57 @@ const wlHits = new Map();
 function wlAllowed(ip){ const t = now(), arr = (wlHits.get(ip) || []).filter(x => t - x < 3600e3); if (arr.length >= 10) return false; arr.push(t); wlHits.set(ip, arr); return true; }
 function unsubToken(email){ return crypto.createHmac("sha256", db.secret).update("unsub:" + email).digest("hex").slice(0, 24); }
 const PUBLIC_URL = (process.env.PUBLIC_URL || "https://fabritrade-server.onrender.com").replace(/\/$/, "");
+/* ================= email (Resend), images (Cloudinary), visitor counts =================
+   Optional settings on Render:
+     RESEND_API_KEY, MAIL_FROM ("FabriTrade <support@fabritrade.net>"), APP_URL (https://fabritrade.net/app.html)
+     CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+   Without them everything still works: emails are skipped, photos stay in the database. */
+const RESEND_KEY = process.env.RESEND_API_KEY || "";
+const MAIL_FROM = process.env.MAIL_FROM || "FabriTrade <onboarding@resend.dev>";
+const APP_URL = (process.env.APP_URL || "https://fabritrade.net/app.html").replace(/\/$/, "");
+const MAIL_BASE = (process.env.MAIL_BASE || "https://api.resend.com").replace(/\/$/, "");
+async function sendMail(to, subject, text){
+  if (!RESEND_KEY || !to) return false;
+  try {
+    const r = await fetch(MAIL_BASE + "/emails", { method:"POST", headers:{ Authorization:"Bearer " + RESEND_KEY, "Content-Type":"application/json" },
+      body: JSON.stringify({ from: MAIL_FROM, to: [to], subject, text: text + "\n\n— FabriTrade · fabritrade.net\nQuestions: support@fabritrade.net" }) });
+    if (!r.ok) { console.error("Email failed:", r.status, (await r.text()).slice(0, 200)); return false; }
+    return true;
+  } catch (e) { console.error("Email failed:", e.message); return false; }
+}
+const CLD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "", CLD_KEY = process.env.CLOUDINARY_API_KEY || "", CLD_SECRET = process.env.CLOUDINARY_API_SECRET || "";
+const CLD_BASE = (process.env.CLOUDINARY_BASE || "https://api.cloudinary.com").replace(/\/$/, "");
+const USE_CLD = !!(CLD_NAME && CLD_KEY && CLD_SECRET);
+function isDataImage(x){ return typeof x === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(x); }
+async function storeImage(dataUrl, folder){
+  if (!isDataImage(dataUrl)) return typeof dataUrl === "string" && /^https:\/\//.test(dataUrl) ? dataUrl : "";
+  if (dataUrl.length > 1.5e6) throw new Error("Photo is too large. Please use a smaller photo.");
+  if (!USE_CLD) return dataUrl; // fallback: keep it in the database (fine for a few photos)
+  const ts = Math.floor(now() / 1000), fld = "fabritrade/" + (folder || "listings");
+  const sig = crypto.createHash("sha1").update("folder=" + fld + "&timestamp=" + ts + CLD_SECRET).digest("hex");
+  const form = new URLSearchParams({ file: dataUrl, api_key: CLD_KEY, timestamp: String(ts), folder: fld, signature: sig });
+  const r = await fetch(CLD_BASE + "/v1_1/" + CLD_NAME + "/image/upload", { method:"POST", body: form });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.secure_url) throw new Error("Image upload failed" + (j.error && j.error.message ? ": " + j.error.message : ""));
+  return j.secure_url;
+}
+/* visitor counts: no cookies; a daily-salted hash of IP + browser is kept in memory only to avoid double counting */
+const seenToday = { day: "", set: new Set() };
+function today(){ return new Date().toISOString().slice(0, 10); }
+function countHit(req, page){
+  const d = today(); if (seenToday.day !== d) { seenToday.day = d; seenToday.set = new Set(); }
+  const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?").split(",")[0];
+  const h = crypto.createHash("sha256").update(d + db.secret + ip + (req.headers["user-agent"] || "")).digest("hex").slice(0, 16);
+  const st = db.stats[d] || (db.stats[d] = { views: 0, visitors: 0, pages: {} });
+  st.views++; st.pages[page] = (st.pages[page] || 0) + 1;
+  if (!seenToday.set.has(h)) { seenToday.set.add(h); st.visitors++; }
+  const keys = Object.keys(db.stats).sort(); while (keys.length > 120) delete db.stats[keys.shift()];
+}
+const ipHits = new Map();
+function ipAllowed(req, key, max, ms){ const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?").split(",")[0]; const k = key + ip, t = now(), arr = (ipHits.get(k) || []).filter(x => t - x < ms); if (arr.length >= max) return false; arr.push(t); ipHits.set(k, arr); return true; }
+const mailNotified = new Map(); // userId -> last "new message" email time
+const clean = (v, n) => String(v == null ? "" : v).replace(/[<>]/g, "").trim().slice(0, n);
+const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 /* simple per-user rate limit for messages */
 const msgHits = new Map();
 function msgAllowed(id){ const t = now(), arr = (msgHits.get(id) || []).filter(x => t - x < 60e3); if (arr.length >= 30) return false; arr.push(t); msgHits.set(id, arr); return true; }
@@ -296,6 +348,86 @@ async function api(req, res, url){
     return send(res, 200, { users: db.users.length, listings: db.listings.length, orders: done.length, gmv: +done.reduce((s,o)=>s+o.total,0).toFixed(2), countries: 50 });
   }
 
+  /* ---- visitor counting (no cookies) ---- */
+  if (p === "/api/hit" && m === "POST") { const b = await body(req); countHit(req, clean(b.page, 20) || "page"); saveDB(); return send(res, 200, { ok:true }); }
+
+  /* ---- free swatch requests (no account needed) ---- */
+  if (p === "/api/swatch" && m === "POST") {
+    if (!ipAllowed(req, "sw:", 8, 3600e3)) return send(res, 429, { error:"Too many requests from this network. Please try again later." });
+    const b = await body(req);
+    const email = clean(b.email, 160).toLowerCase();
+    if (!validEmail(email)) return send(res, 400, { error:"Please enter a valid email." });
+    if (b.consent !== true) return send(res, 400, { error:"Please tick the box so we can contact you about this swatch." });
+    const l = db.listings.find(x => x.id === +b.listingId);
+    const sw = { id: nextId("swatch"), listingId: l ? l.id : null, fabric: l ? l.title : clean(b.fabric, 120), type: l ? l.type : clean(b.type, 40),
+      email, name: clean(b.name, 80), company: clean(b.company, 80), country: clean(b.country, 60), qty: clean(b.qty, 40), note: clean(b.note, 500),
+      lang: ["en","zh","vi"].includes(b.lang) ? b.lang : "en", status: "new", createdAt: now() };
+    db.swatches.unshift(sw); logAdmin("Swatch request: " + (sw.fabric || "fabric") + (sw.country ? " · " + sw.country : "")); saveDB();
+    const firstName = sw.name ? " " + sw.name.split(" ")[0] : "";
+    sendMail(email, "We received your swatch request", "Hi" + firstName + ",\n\nThanks for requesting a swatch of " + (sw.fabric || "this fabric") + ". FabriTrade will reply within 2 business days with the next steps.\n\nYou asked for this on fabritrade.net. If it wasn't you, just ignore this email.");
+    if (OWNER_EMAIL) sendMail(OWNER_EMAIL, "New swatch request: " + (sw.fabric || "fabric"), "From: " + email + (sw.country ? " (" + sw.country + ")" : "") + "\nQuantity later: " + (sw.qty || "-") + "\nNote: " + (sw.note || "-") + "\n\nOpen the Manager to follow up.");
+    return send(res, 200, { ok:true });
+  }
+
+  /* ---- what buyers are asking for (anonymous, for sellers) ---- */
+  if (p === "/api/demand" && m === "GET") {
+    const since = now() - 90 * 864e5;
+    const items = [
+      ...db.swatches.filter(x => x.createdAt > since).map(x => ({ kind:"swatch", what: x.fabric || x.type || "Fabric", qty: x.qty || "", country: x.country || "", at: x.createdAt })),
+      ...db.rfqs.filter(r => !r.closed && (r.createdAt || 0) > since && r.byId).map(r => ({ kind:"rfq", what: r.title, qty: r.qty ? r.qty + " m" : "", country: "", at: r.createdAt || 0 }))
+    ].sort((a, b) => b.at - a.at).slice(0, 12);
+    const d30 = now() - 30 * 864e5;
+    return send(res, 200, { items, counts: { swatches30d: db.swatches.filter(x => x.createdAt > d30).length, rfqs30d: db.rfqs.filter(r => (r.createdAt || 0) > d30).length } });
+  }
+
+  /* ---- "we list it for you": seller submissions (no account needed) ---- */
+  if (p === "/api/submit-listing" && m === "POST") {
+    if (!ipAllowed(req, "sub:", 5, 3600e3)) return send(res, 429, { error:"Too many submissions from this network. Please try again later." });
+    const b = await body(req);
+    if (b.consent !== true) return send(res, 400, { error:"Please tick the box to agree." });
+    const contact = clean(b.contact, 80);
+    if (!clean(b.shop, 80) || !contact) return send(res, 400, { error:"Please add your shop name and a Zalo or phone number." });
+    const photos = [];
+    try { for (const ph of (Array.isArray(b.photos) ? b.photos.slice(0, 3) : [])) { const u = await storeImage(ph, "submissions"); if (u) photos.push(u); } }
+    catch (e) { return send(res, 400, { error: e.message }); }
+    const sub = { id: nextId("submission"), shop: clean(b.shop, 80), contact, email: validEmail(clean(b.email,160)) ? clean(b.email,160).toLowerCase() : "", market: clean(b.market, 80),
+      type: clean(b.type, 40) || "Cotton", title: clean(b.title, 120), price: clean(b.price, 40), moq: clean(b.moq, 20), width: clean(b.width, 20), gsm: clean(b.gsm, 20),
+      note: clean(b.note, 500), photos, status: "new", consentAt: now(), createdAt: now() };
+    db.submissions.unshift(sub); logAdmin("Seller submission: " + sub.shop); saveDB();
+    if (OWNER_EMAIL) sendMail(OWNER_EMAIL, "New seller submission: " + sub.shop, "Shop: " + sub.shop + "\nContact: " + sub.contact + "\nMarket: " + (sub.market || "-") + "\nFabric: " + (sub.title || sub.type) + " · " + (sub.price || "-") + "\n\nOpen the Manager to review and publish.");
+    return send(res, 200, { ok:true });
+  }
+
+  /* ---- image upload for logged-in sellers ---- */
+  if (p === "/api/upload" && m === "POST") {
+    const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
+    if (!ipAllowed(req, "up:", 40, 3600e3)) return send(res, 429, { error:"Too many uploads. Please wait a bit." });
+    const b = await body(req);
+    try { const url = await storeImage(b.dataUrl, "listings"); if (!url) return send(res, 400, { error:"That doesn't look like a photo." }); return send(res, 200, { url, hosted: /^https:/.test(url) }); }
+    catch (e) { return send(res, 400, { error: e.message }); }
+  }
+
+  /* ---- forgot password ---- */
+  if (p === "/api/password/forgot" && m === "POST") {
+    if (!ipAllowed(req, "pw:", 5, 3600e3)) return send(res, 429, { error:"Too many tries. Please wait a bit." });
+    const b = await body(req); const email = clean(b.email, 160).toLowerCase();
+    const u = db.users.find(x => x.email === email);
+    if (u && !u.seed) {
+      const tok = crypto.randomBytes(24).toString("hex");
+      u.resetHash = crypto.createHash("sha256").update(tok).digest("hex"); u.resetExp = now() + 3600e3; saveDB();
+      sendMail(u.email, "Reset your FabriTrade password", "Someone (hopefully you) asked to reset your FabriTrade password.\n\nOpen this link within 1 hour to choose a new one:\n" + APP_URL + "#reset=" + tok + "\n\nIf you didn't ask for this, you can ignore this email; your password stays the same.");
+    }
+    return send(res, 200, { ok:true, emailEnabled: !!RESEND_KEY }); // same answer either way, so nobody can test which emails have accounts
+  }
+  if (p === "/api/password/reset" && m === "POST") {
+    const b = await body(req); const h = crypto.createHash("sha256").update(String(b.token || "")).digest("hex");
+    const u = db.users.find(x => x.resetHash && x.resetHash === h && x.resetExp > now());
+    if (!u) return send(res, 400, { error:"This reset link is invalid or has expired. Please ask for a new one." });
+    if (String(b.newPassword || "").length < 6) return send(res, 400, { error:"New password must be at least 6 characters." });
+    const { salt, hash } = hashPassword(b.newPassword); u.salt = salt; u.hash = hash; u.tokenVer = (u.tokenVer || 0) + 1; delete u.resetHash; delete u.resetExp; saveDB();
+    return send(res, 200, { ok:true, token: makeToken(u.id), user: pub(u) });
+  }
+
   /* ---- Waitlist (launch updates) ---- */
   if (p === "/api/waitlist" && m === "POST") {
     const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?").split(",")[0];
@@ -408,6 +540,7 @@ async function api(req, res, url){
     const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
     if (S.requireVerify && !u.verified && u.role !== "owner") return send(res, 403, { error:"Your account must be verified before listing. The owner will review it soon." });
     const b = await body(req);
+    if (isDataImage(b.img)) { try { b.img = await storeImage(b.img, "listings"); } catch (e) { return send(res, 400, { error: e.message }); } }
     const l = { id: nextId("listing"), ownerId: u.id, title: String(b.title||"Untitled fabric").slice(0,120), type: b.type||"Cotton", comp: b.comp||"", gsm:+b.gsm||0, width:+b.width||0,
       price:+b.price||0, moq: Math.max(1,+b.moq||1), origin: b.origin||"", cert: b.cert||"", color: b.color||"#cdbfa6", img: b.img||"", inco: b.inco||"FOB", stock: b.stock||"in stock", lead:+b.lead||7, rating:5.0, featured:false, createdAt: now() };
     if (S.prelaunch && !u.founding) { u.founding = true; logAdmin("Founding seller: " + u.name); }
@@ -494,6 +627,7 @@ async function api(req, res, url){
     const reason = S.autoFlag ? riskReason(text) : null;
     const msg = { id: nextId("message"), fromId: u.id, toId: to.id, listingId: +b.listingId || null, text, flagged: !!reason, createdAt: now() };
     db.messages.push(msg);
+    if (RESEND_KEY && to.email && !to.seed && now() - (mailNotified.get(to.id) || 0) > 3600e3) { mailNotified.set(to.id, now()); sendMail(to.email, "New message on FabriTrade from " + u.name, "You have a new message from " + u.name + " on FabriTrade.\n\nRead and reply here: " + APP_URL + "\n\nFor your safety, keep chats and payments on FabriTrade."); }
     if (reason) db.flags.unshift({ id: nextId("flag"), messageId: msg.id, fromId: u.id, fromName: u.name, toName: to.name, text, reason, at: now(), done:false });
     saveDB(); return send(res, 200, { message: { ...msg, mine:true } });
   }
@@ -567,6 +701,44 @@ async function api(req, res, url){
     if (sub === "ai" && m === "GET") { const n = db.news || {}; return send(res, 200, { enabled: !!GEMINI_KEY, model: goodModel || n.model || "", news: { count: (n.items||[]).length, updated: n.updated || 0, error: n.error || "", basic: !!n.basic, items: n.items || [] }, report: db.aiReport || null }); }
     if (sub === "ai/news" && m === "POST") { const r = await refreshNews("manual"); return r ? send(res, 200, { news: r }) : send(res, 502, { error: "Refresh failed: " + ((db.news||{}).error || "unknown") }); }
     if (sub === "ai/report" && m === "POST") { if (!GEMINI_KEY) return send(res, 400, { error: "Add GEMINI_API_KEY on Render first." }); try { return send(res, 200, { report: await ownerReport() }); } catch (e) { return send(res, 502, { error: "AI report failed: " + e.message }); } }
+    if (sub === "swatches" && m === "GET") return send(res, 200, { swatches: db.swatches });
+    if (sub.match(/^swatches\/\d+$/)) {
+      const x = db.swatches.find(y => y.id === +sub.split("/")[1]); if (!x) return send(res, 404, { error:"Not found." });
+      if (m === "DELETE") { db.swatches = db.swatches.filter(y => y !== x); saveDB(); return send(res, 200, { ok:true }); }
+      const b = await body(req); if (["new","contacted","sent","closed"].includes(b.status)) x.status = b.status; if (b.adminNote !== undefined) x.adminNote = clean(b.adminNote, 300);
+      saveDB(); return send(res, 200, { swatch: x });
+    }
+    if (sub === "submissions" && m === "GET") return send(res, 200, { submissions: db.submissions });
+    if (sub.match(/^submissions\/\d+$/)) {
+      const x = db.submissions.find(y => y.id === +sub.split("/")[1]); if (!x) return send(res, 404, { error:"Not found." });
+      if (m === "DELETE") { db.submissions = db.submissions.filter(y => y !== x); saveDB(); return send(res, 200, { ok:true }); }
+      const b = await body(req);
+      if (b.action === "publish") {
+        const price = parseFloat(String(b.price ?? x.price).replace(",", ".")) || 0;
+        const l = { id: nextId("listing"), ownerId: u.id, displaySeller: x.shop, displayVerified: !!b.verified, title: clean(b.title || x.title || (x.type + " fabric"), 120), type: clean(b.type || x.type, 40),
+          comp: clean(b.comp, 80), gsm: +(b.gsm ?? x.gsm) || 0, width: +(b.width ?? x.width) || 0, price, moq: Math.max(1, +(b.moq ?? x.moq) || 1), origin: clean(b.origin || x.market, 80),
+          cert: "", color: "#cdbfa6", img: x.photos[0] || "", inco: "FOB", stock: "in stock", lead: 7, featured: false, fromSubmission: x.id, createdAt: now() };
+        db.listings.unshift(l); x.status = "published"; x.listingId = l.id; logAdmin("Published submission from " + x.shop); saveDB();
+        return send(res, 200, { listing: listingOut(l), submission: x });
+      }
+      if (["new","contacted","rejected"].includes(b.status)) x.status = b.status; saveDB(); return send(res, 200, { submission: x });
+    }
+    if (sub === "stats" && m === "GET") {
+      const days = []; for (let i = 29; i >= 0; i--) { const d = new Date(now() - i * 864e5).toISOString().slice(0, 10); const st = db.stats[d] || { views:0, visitors:0, pages:{} };
+        const inDay = t => t && new Date(t).toISOString().slice(0, 10) === d;
+        days.push({ day: d, views: st.views, visitors: st.visitors, pages: st.pages, signups: db.users.filter(x => inDay(x.createdAt) && !x.seed).length, waitlist: db.waitlist.filter(x => inDay(x.createdAt)).length,
+          swatches: db.swatches.filter(x => inDay(x.createdAt)).length, submissions: db.submissions.filter(x => inDay(x.createdAt)).length, rfqs: db.rfqs.filter(x => inDay(x.createdAt)).length }); }
+      return send(res, 200, { days, totals: { users: db.users.filter(x => !x.seed).length, listings: db.listings.length, waitlist: db.waitlist.length, swatches: db.swatches.length, submissions: db.submissions.length },
+        services: { email: !!RESEND_KEY, images: USE_CLD } });
+    }
+    if (sub === "migrate-images" && m === "POST") {
+      if (!USE_CLD) return send(res, 400, { error:"Add the Cloudinary settings on Render first." });
+      let moved = 0, failed = 0;
+      for (const l of db.listings) { if (isDataImage(l.img)) { try { l.img = await storeImage(l.img, "listings"); moved++; } catch { failed++; } } }
+      for (const x of db.submissions) { for (let i = 0; i < x.photos.length; i++) if (isDataImage(x.photos[i])) { try { x.photos[i] = await storeImage(x.photos[i], "submissions"); moved++; } catch { failed++; } } }
+      logAdmin("Moved " + moved + " photos to Cloudinary" + (failed ? " (" + failed + " failed)" : "")); saveDB();
+      return send(res, 200, { moved, failed });
+    }
     if (sub === "waitlist" && m === "GET") return send(res, 200, { waitlist: db.waitlist.map(w => ({ ...w, unsubscribe: PUBLIC_URL + "/api/waitlist/unsubscribe?e=" + encodeURIComponent(w.email) + "&t=" + unsubToken(w.email) })) });
     if (sub.match(/^waitlist\/\d+$/) && m === "DELETE") { const id = +sub.split("/")[1]; const w = db.waitlist.find(x => x.id === id); if (!w) return send(res, 404, { error:"Not found." }); db.waitlist = db.waitlist.filter(x => x !== w); logAdmin("Removed from waitlist: " + w.email); saveDB(); return send(res, 200, { ok:true }); }
     if (sub === "settings" && m === "GET") return send(res, 200, { settings: S });
@@ -605,6 +777,12 @@ initDB().then(() => {
     serveStatic(req, res, url);
   }).listen(PORT, () => console.log(`FabriTrade server running →  http://localhost:${PORT}  (storage: ${USE_UPSTASH ? "Upstash cloud" : DATA_FILE})  (AI: ${GEMINI_KEY ? "Gemini on" : "off — add GEMINI_API_KEY"})`));
   // keep Price Watch fresh while the server is awake (it also refreshes when someone opens the page)
+  { const prune = () => { const t = now(), a = db.swatches.length + db.submissions.length;
+      db.swatches = db.swatches.filter(x => t - x.createdAt < 365 * 864e5);
+      db.submissions = db.submissions.filter(x => x.status === "published" || t - x.createdAt < 183 * 864e5);
+      for (const u of db.users) if (u.resetExp && u.resetExp < t) { delete u.resetHash; delete u.resetExp; }
+      if (db.swatches.length + db.submissions.length !== a) { logAdmin("Removed old swatch requests / submissions (privacy policy retention)"); saveDB(); } };
+    prune(); setInterval(prune, 24 * 3600e3).unref(); }
   { if (newsStale()) refreshNews("startup"); setInterval(() => { if (newsStale()) refreshNews("scheduled"); }, 30 * 60e3).unref(); }
 });
 // save any last changes before Render shuts the server down
