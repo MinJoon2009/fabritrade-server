@@ -357,7 +357,7 @@ async function api(req, res, url){
       : (!db.users.some(u => u.role === "owner") && db.users.filter(u => !u.seed).length === 0);
     const user = { id: nextId("user"), name: String(b.name).slice(0,80), email, salt, hash,
       role: isFirst ? "owner" : (b.role === "seller" ? "seller" : "buyer"), verified: isFirst, suspended:false, country: b.country||"", createdAt: now(),
-      termsAcceptedAt: now(), termsVersion: String(b.termsVersion || "1.0").slice(0, 10) }; // record of consent (Terms + Privacy Policy)
+      termsAcceptedAt: now(), termsVersion: String(b.termsVersion || "1.0").slice(0, 10), ageConfirmed: b.ageConfirmed === true }; // record of consent (Terms + Privacy Policy)
     db.users.push(user); if (isFirst) logAdmin("Owner account created: " + email); saveDB();
     return send(res, 200, { token: makeToken(user.id), user: pub(user), owner: isFirst });
   }
@@ -375,6 +375,25 @@ async function api(req, res, url){
     if (String(b.newPassword||"").length < 6) return send(res, 400, { error:"New password must be at least 6 characters." });
     const { salt, hash } = hashPassword(b.newPassword); u.salt = salt; u.hash = hash; u.tokenVer = (u.tokenVer || 0) + 1; // logs out every other device
     saveDB(); return send(res, 200, { ok:true, token: makeToken(u.id) });
+  }
+  if (p === "/api/me/delete" && m === "POST") {
+    const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
+    const b = await body(req);
+    if (!checkPassword(b.password||"", u.salt, u.hash)) return send(res, 401, { error:"That password is not correct." });
+    if (u.role === "owner") return send(res, 400, { error:"The owner account can't be deleted here." });
+    const open = db.orders.some(o => (o.buyerId === u.id || o.sellerId === u.id) && ["in_escrow","shipped"].includes(o.status));
+    if (open) return send(res, 409, { error:"Please finish your open orders first, then delete your account." });
+    // remove the account, its listings and messages; keep order records (anonymised) for legal and tax reasons
+    db.listings = db.listings.filter(l => l.ownerId !== u.id);
+    db.messages = db.messages.filter(x => x.fromId !== u.id && x.toId !== u.id);
+    db.flags.forEach(f => { if (f.fromId === u.id) { f.fromName = "Deleted user"; f.text = "[deleted]"; } });
+    db.orders.forEach(o => { if (o.buyerId === u.id) o.buyerName = "Deleted user"; if (o.sellerId === u.id) o.sellerName = "Deleted user"; });
+    db.rfqs = db.rfqs.filter(r => r.byId !== u.id);
+    db.rfqs.forEach(r => { r.offers = (r.offers || []).filter(o => o.sellerId !== u.id); });
+    db.waitlist = (db.waitlist || []).filter(w => w.email !== u.email);
+    db.users = db.users.filter(x => x !== u);
+    logAdmin("Account deleted by user (id " + u.id + ")"); saveDB();
+    return send(res, 200, { ok:true });
   }
   if (p === "/api/logout-all" && m === "POST") {
     const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
