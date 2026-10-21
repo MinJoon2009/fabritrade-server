@@ -3,6 +3,9 @@
 <head>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
+<link rel="icon" href="https://fabritrade.net/favicon.ico" sizes="48x48">
+<link rel="icon" href="https://fabritrade.net/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://fabritrade.net/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FabriTrade app — browse fabric from Vietnam, request free swatches</title>
 <meta name="description" content="Browse fabric listings from Vietnam's sellers, request a free swatch, post a request for quote and message sellers in English, Chinese or Vietnamese.">
@@ -459,12 +462,14 @@
     nav#nav::-webkit-scrollbar{display:none}
     nav#nav button{flex:none;white-space:nowrap;padding:10px 2px;margin-right:16px}
   }
+  .logo .dot,.authcard .logo .dot,.introcard .ilogo .dot{display:inline-block!important;width:22px;height:22px;border-radius:0!important;flex:none;background:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%231f4e79%22/%3E%3Cpath d=%22M7 18.5C9 7.5 23 7.5 25 18.5%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%223%22 stroke-linecap=%22square%22/%3E%3Crect x=%223.5%22 y=%2215.5%22 width=%227%22 height=%227%22 fill=%22%238fb8e0%22/%3E%3Crect x=%2221.5%22 y=%2215.5%22 width=%227%22 height=%227%22 fill=%22%23fff%22/%3E%3C/svg%3E") center/cover no-repeat!important}
+  .logo{display:flex;align-items:center;gap:9px}
 </style>
 </head>
 <body>
 <header>
   <div class="bar">
-    <div class="logo" onclick="go('browse')">FabriTrade</div>
+    <div class="logo" onclick="go('browse')"><span class="dot" aria-hidden="true"></span>FabriTrade</div>
     <nav id="nav"></nav>
     <div class="ctrl">
       <button class="tlink" id="favBtn" onclick="go('fav')"></button>
