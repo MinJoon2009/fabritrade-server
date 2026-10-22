@@ -177,6 +177,11 @@ function ipAllowed(req, key, max, ms){ const ip = (req.headers["x-forwarded-for"
 const mailNotified = new Map(); // userId -> last "new message" email time
 const clean = (v, n) => String(v == null ? "" : v).replace(/[<>]/g, "").trim().slice(0, n);
 const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+/* translation limits: per user per hour, and a daily cap to stay inside the free Gemini quota */
+const trHits = new Map(); const trDay = { day: "", n: 0 };
+const TR_DAILY = +process.env.TRANSLATE_DAILY_CAP || 400;
+function trAllowed(id){ const d = new Date().toISOString().slice(0,10); if (trDay.day !== d) { trDay.day = d; trDay.n = 0; } if (trDay.n >= TR_DAILY) return false;
+  const t = now(), arr = (trHits.get(id) || []).filter(x => t - x < 3600e3); if (arr.length >= 120) return false; arr.push(t); trHits.set(id, arr); trDay.n++; return true; }
 /* simple per-user rate limit for messages */
 const msgHits = new Map();
 function msgAllowed(id){ const t = now(), arr = (msgHits.get(id) || []).filter(x => t - x < 60e3); if (arr.length >= 30) return false; arr.push(t); msgHits.set(id, arr); return true; }
@@ -630,6 +635,29 @@ async function api(req, res, url){
     if (RESEND_KEY && to.email && !to.seed && now() - (mailNotified.get(to.id) || 0) > 3600e3) { mailNotified.set(to.id, now()); sendMail(to.email, "New message on FabriTrade from " + u.name, "You have a new message from " + u.name + " on FabriTrade.\n\nRead and reply here: " + APP_URL + "\n\nFor your safety, keep chats and payments on FabriTrade."); }
     if (reason) db.flags.unshift({ id: nextId("flag"), messageId: msg.id, fromId: u.id, fromName: u.name, toName: to.name, text, reason, at: now(), done:false });
     saveDB(); return send(res, 200, { message: { ...msg, mine:true } });
+  }
+  /* ---- chat translation (Gemini, cached on the message) ---- */
+  if (p === "/api/messages/translate" && m === "POST") {
+    const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });
+    const b = await body(req);
+    const lang = ({ en:"English", vi:"Vietnamese", zh:"Simplified Chinese" })[b.lang];
+    if (!lang) return send(res, 400, { error:"Unknown language." });
+    const msg = db.messages.find(x => x.id === +b.id);
+    if (!msg || (msg.fromId !== u.id && msg.toId !== u.id)) return send(res, 404, { error:"Message not found." });
+    msg.tr = msg.tr || {};
+    if (typeof msg.tr[b.lang] === "string") return send(res, 200, { id: msg.id, lang: b.lang, text: msg.tr[b.lang], cached: true });
+    if (!GEMINI_KEY) return send(res, 503, { error:"Translation isn't available right now.", off: true });
+    if (!trAllowed(u.id)) return send(res, 429, { error:"Translation limit reached for now. Please try again later." });
+    try {
+      const r = await gemini(msg.text, { maxTokens: 1024, system:
+        "You translate chat messages between fabric buyers and sellers on a marketplace. Translate the user's message into " + lang + ". " +
+        "Keep every number, price, currency, unit (m, yd, gsm, cm), colour code and product name exactly as written. Keep the tone. " +
+        "Do not add explanations, quotes or notes. Output only the translation. If the message is already in " + lang + " or has no words to translate, output exactly: SAME" });
+      let out = String(r.text || "").trim();
+      if (/^SAME\.?$/i.test(out) || out.toLowerCase() === msg.text.trim().toLowerCase()) out = "";
+      msg.tr[b.lang] = out.slice(0, 4000); saveDB();
+      return send(res, 200, { id: msg.id, lang: b.lang, text: msg.tr[b.lang] });
+    } catch (e) { console.error("Translate failed:", e.message.slice(0, 200)); return send(res, 503, { error:"Translation isn't available right now." }); }
   }
   if (p === "/api/messages" && m === "GET") {
     const u = auth(req); if (!u) return send(res, 401, { error:"Please log in." });

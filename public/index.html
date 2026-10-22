@@ -134,7 +134,9 @@
   .msg{max-width:74%;padding:9px 13px;border-radius:14px;font-size:14px}
   .msg.them{background:var(--grey);align-self:flex-start;border-bottom-left-radius:4px}
   .msg.me{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
-  .msg .tr{display:block;font-size:11.5px;opacity:.7;margin-top:4px;font-style:italic}
+  .msg .tr{display:block;font-size:13px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(15,23,42,.12);color:#334155}
+  .msg .tr b{font-weight:600;font-size:11.5px;color:#566174}
+  .msg .tr-busy{font-size:12px;color:#566174}
   .composer{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
   .composer input{flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px}
   .toggle{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600}
@@ -522,7 +524,7 @@ const I18N = {
     subtotal:"Subtotal", you_pay:"You pay", comm_line:"Platform fee deducted from seller (3.5%)", seller_gets:"Seller receives",
     comm_note:"<b>How it works:</b> When payments launch in 2027, your payment is held until you confirm delivery. FabriTrade earns a <b>3.5% commission</b> on each completed sale, taken from the seller's payout and never added to your price.",
     seller_since:"Verified seller", trades:"trades", rating:"rating",
-    chat_title:"Messages", translate:"Translation (coming soon)", type_msg:"Type a message…", send:"Send", no_thread:"Select a conversation",
+    chat_title:"Messages", translate:"Translate messages into English", type_msg:"Type a message…", send:"Send", no_thread:"Select a conversation",
     contacted:"Message sent to seller — opening chat",
     sell_title:"List your fabric", sell_sub:"Create a listing. It's free — FabriTrade only earns when your fabric sells.",
     fld_title:"Listing title", fld_type:"Fabric type", fld_comp:"Composition", fld_gsm:"Weight (GSM)", fld_width:"Width (cm)", fld_price:"Price per meter (USD)", fld_moq:"Minimum order (m)", fld_origin:"Origin (city, country)", fld_cert:"Certification (optional)", fld_color:"Main color", publish:"Publish listing", listed_ok:"Fabric listed! It's now live in the marketplace.",
@@ -616,7 +618,7 @@ const I18N = {
     subtotal:"小计", you_pay:"您支付", comm_line:"从卖家扣除的平台费(3.5%)", seller_gets:"卖家实收",
     comm_note:"<b>运作方式：</b>2027 年支付上线后，您的货款会先被保管，直到您确认收货。FabriTrade 对每笔成交收取 <b>3.5% 佣金</b>，从卖家收款中扣除，绝不加到您的价格上。",
     seller_since:"认证卖家", trades:"笔交易", rating:"评分",
-    chat_title:"消息", translate:"翻译（即将推出）", type_msg:"输入消息……", send:"发送", no_thread:"请选择一个会话",
+    chat_title:"消息", translate:"把消息翻译成中文", type_msg:"输入消息……", send:"发送", no_thread:"请选择一个会话",
     contacted:"已发送消息给卖家——正在打开聊天",
     sell_title:"发布您的面料", sell_sub:"创建商品免费——FabriTrade 仅在您售出面料时收费。",
     fld_title:"商品标题", fld_type:"面料类型", fld_comp:"成分", fld_gsm:"克重(GSM)", fld_width:"幅宽(厘米)", fld_price:"每米价格(美元)", fld_moq:"最低起订(米)", fld_origin:"产地(城市，国家)", fld_cert:"认证(可选)", fld_color:"主色", publish:"发布商品", listed_ok:"面料已发布！现已在市场上线。",
@@ -710,7 +712,7 @@ const I18N = {
     subtotal:"Tạm tính", you_pay:"Bạn trả", comm_line:"Phí nền tảng trừ từ người bán (3,5%)", seller_gets:"Người bán nhận",
     comm_note:"<b>Cách hoạt động:</b> Khi thanh toán ra mắt năm 2027, tiền của bạn được giữ đến khi bạn xác nhận nhận hàng. FabriTrade thu <b>hoa hồng 3,5%</b> trên mỗi giao dịch hoàn tất, trừ vào tiền của người bán, không cộng vào giá của bạn.",
     seller_since:"Người bán đã xác minh", trades:"giao dịch", rating:"đánh giá",
-    chat_title:"Tin nhắn", translate:"Dịch (sắp có)", type_msg:"Nhập tin nhắn…", send:"Gửi", no_thread:"Chọn một cuộc trò chuyện",
+    chat_title:"Tin nhắn", translate:"Dịch tin nhắn sang tiếng Việt", type_msg:"Nhập tin nhắn…", send:"Gửi", no_thread:"Chọn một cuộc trò chuyện",
     contacted:"Đã gửi tin nhắn cho người bán — đang mở trò chuyện",
     sell_title:"Đăng bán vải của bạn", sell_sub:"Tạo tin đăng miễn phí — FabriTrade chỉ thu phí khi vải của bạn được bán.",
     fld_title:"Tiêu đề tin đăng", fld_type:"Loại vải", fld_comp:"Thành phần", fld_gsm:"Định lượng (GSM)", fld_width:"Khổ vải (cm)", fld_price:"Giá mỗi mét (USD)", fld_moq:"Đặt tối thiểu (m)", fld_origin:"Xuất xứ (thành phố, quốc gia)", fld_cert:"Chứng nhận (tùy chọn)", fld_color:"Màu chính", publish:"Đăng tin", listed_ok:"Đã đăng vải! Hiện đã hiển thị trên sàn.",
@@ -2065,7 +2067,7 @@ const _confirmOffer=confirmOffer;
 confirmOffer=async function(id){ if(!LIVE) return _confirmOffer(id); try{ const p=+document.getElementById("o_price").value; await api("/api/rfqs/"+id+"/offers","POST",{price:p}); closeModal(); toast(t("rfq_offer_sent")); await liveRefresh(); render(); }catch(e){ liveErr(e); } };
 
 // --- messages ---
-async function openThread(uid){ state.threadId=uid; try{ const m=await api("/api/messages?withUserId="+uid); const th=THREADS.find(x=>x.id===uid); if(th){ th.msgs=[]; m.messages.forEach(x=>{ th.msgs.push({me:x.mine,t:x.text,tr:""}); if(x.flagged) th.msgs.push({ai:true}); }); if(!th.msgs.length) th.msgs.push({me:false,t:"…",tr:""}); } }catch(e){} render(); scrollChat(); }
+async function openThread(uid){ state.threadId=uid; try{ const m=await api("/api/messages?withUserId="+uid); const th=THREADS.find(x=>x.id===uid); if(th){ th.msgs=[]; m.messages.forEach(x=>{ th.msgs.push({id:x.id,me:x.mine,t:x.text,trs:x.tr||{}}); if(x.flagged) th.msgs.push({ai:true}); }); if(!th.msgs.length) th.msgs.push({me:false,t:"…",tr:""}); } }catch(e){} render(); scrollChat(); }
 const _contactSeller=contactSeller;
 contactSeller=async function(listingId){ if(!LIVE) return _contactSeller(listingId);
   try{ const r=await api("/api/users/lookup?listingId="+listingId); const uid=r.user.id;
@@ -2082,9 +2084,9 @@ viewMessages=function(){ if(!LIVE) return _viewMessages();
   if(!th) return `<h1 class="page">${t("chat_title")}</h1><div class="empty">${t("no_thread")}</div>`;
   return `<h1 class="page">${t("chat_title")}</h1><div class="sub">&nbsp;</div>
   <div class="chat-wrap"><div class="threads">${THREADS.map(x=>`<div class="thread ${x.id===th.id?'active':''}" onclick="openThread(${x.id})"><div class="n">${x.name}</div><div class="last">${(x.msgs[x.msgs.length-1]||{}).t||""}</div></div>`).join("")}</div>
-    <div class="chat"><div class="head"><strong>${th.name}</strong><label class="toggle" hidden><input type="checkbox" ${state.translate?'checked':''} onchange="state.translate=this.checked;render()">  ${t("translate")}</label></div>
+    <div class="chat"><div class="head"><strong>${th.name}</strong><label class="toggle"><input type="checkbox" ${trOn()?'checked':''} onchange="setTrOn(this.checked)">  ${t("translate")}</label></div>
       <div class="ai-mod"> ${t("ai_mod")}</div>
-      <div class="msgs" id="msgs">${th.msgs.map(m=> m.ai?`<div class="msg-ai">${t("ai_mod_warn")}</div>`:`<div class="msg ${m.me?'me':'them'}">${escapeHtml(m.t)}</div>`).join("")}</div>
+      <div class="msgs" id="msgs">${th.msgs.map(m=> m.ai?`<div class="msg-ai">${t("ai_mod_warn")}</div>`:`<div class="msg ${m.me?'me':'them'}"${m.id?` data-mid="${m.id}"`:""}>${escapeHtml(m.t)}${trHTML(m)}</div>`).join("")}</div>
       <div class="composer"><input id="msgInput" placeholder="${t("type_msg")}" onkeydown="if(event.key==='Enter')sendMsg()"><button class="btn-primary" style="width:auto;padding:0 20px;border-radius:10px" onclick="sendMsg()">${t("send")}</button></div>
     </div></div>`; };
 function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -2298,6 +2300,36 @@ function checkResetHash(){ const m=location.hash.match(/^#reset=([a-f0-9]{20,})/
 (function(){ if(!API_BASE) return; try{ if(sessionStorage.getItem("ft_hit")) return; sessionStorage.setItem("ft_hit","1"); }catch(e){}
   setTimeout(()=>{ fetch(API_BASE+"/api/hit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({page:"app"}),keepalive:true}).catch(()=>{}); },1500); })();
 
+
+/* ---------- chat translation (real, via the server's Gemini; cached per message) ---------- */
+Object.assign(I18N.en,{tr_label:"Translated", tr_busy:"Translating…", tr_off:"Translation isn't available right now."});
+Object.assign(I18N.zh,{tr_label:"译文", tr_busy:"正在翻译…", tr_off:"翻译暂时不可用。"});
+Object.assign(I18N.vi,{tr_label:"Bản dịch", tr_busy:"Đang dịch…", tr_off:"Hiện chưa dịch được."});
+function trOn(){ try{ const v=localStorage.getItem("ft_tr"); return v===null?true:v==="1"; }catch(e){ return true; } }
+function setTrOn(v){ try{ localStorage.setItem("ft_tr",v?"1":"0"); }catch(e){} render(); }
+let trWarned=false; const trPending=new Set();
+function trHTML(m){
+  if(!LIVE || m.me || !m.id || !trOn()) return "";
+  const v=(m.trs||{})[state.lang];
+  if(typeof v==="string") return v?`<span class="tr"><b>${t("tr_label")}:</b> ${escapeHtml(v)}</span>`:"";
+  return `<span class="tr tr-busy">${t("tr_busy")}</span>`;
+}
+async function translatePending(){
+  if(!LIVE || !trOn() || state.view!=="messages") return;
+  const th=THREADS.find(x=>x.id===state.threadId); if(!th) return;
+  const lang=state.lang;
+  const todo=th.msgs.filter(m=>m.id && !m.me && typeof (m.trs||{})[lang]!=="string" && !trPending.has(m.id+lang));
+  for(const m of todo.slice(-30)){
+    trPending.add(m.id+lang);
+    try{ const r=await api("/api/messages/translate","POST",{id:m.id,lang}); m.trs=m.trs||{}; m.trs[lang]=r.text||""; }
+    catch(e){ m.trs=m.trs||{}; m.trs[lang]=""; if(!trWarned){ trWarned=true; toast(e.message||t("tr_off")); } }
+    trPending.delete(m.id+lang);
+    const el=document.querySelector(`.msg[data-mid="${m.id}"]`);
+    if(el){ const old=el.querySelector(".tr"); if(old) old.remove(); el.insertAdjacentHTML("beforeend",trHTML(m)); }
+  }
+}
+const _renderTr=render;
+render=function(){ _renderTr(); if(state.view==="messages") setTimeout(translatePending,50); };
 </script>
 </body>
 </html>
