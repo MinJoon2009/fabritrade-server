@@ -466,6 +466,13 @@
   }
   .logo .dot,.authcard .logo .dot,.introcard .ilogo .dot{display:inline-block!important;width:22px;height:22px;border-radius:0!important;flex:none;background:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%231f4e79%22/%3E%3Cpath d=%22M7 18.5C9 7.5 23 7.5 25 18.5%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%223%22 stroke-linecap=%22square%22/%3E%3Crect x=%223.5%22 y=%2215.5%22 width=%227%22 height=%227%22 fill=%22%238fb8e0%22/%3E%3Crect x=%2221.5%22 y=%2215.5%22 width=%227%22 height=%227%22 fill=%22%23fff%22/%3E%3C/svg%3E") center/cover no-repeat!important}
   .logo{display:flex;align-items:center;gap:9px}
+  /* tour v2 */
+  .tour-hl{outline:3px solid #1f4e79!important;outline-offset:4px;border-radius:6px;position:relative;z-index:61}
+  .tourcard.at-top{bottom:auto;top:16px}
+  .tourcard .tc-choose{display:grid;gap:8px;margin:0 0 6px}
+  .tourcard .tc-choose .btn{width:100%}
+  .tourcard .tc-x{background:none;border:0;font-size:20px;line-height:1;padding:2px 6px}
+  @media(max-width:600px){ .tourcard{bottom:12px;padding:16px} .tourcard h4{font-size:16px} .tourcard p{font-size:13.5px} }
 </style>
 </head>
 <body>
@@ -547,7 +554,7 @@ const I18N = {
     cart_comm:"Platform fee (3.5%, from sellers)", cart_pay:"Total you pay",
     qview:"Quick view",
     fld_photo:"Product photo", photo_hint:"Upload your own fabric photo (JPG/PNG). A real photo gets far more replies. Without one, buyers see the fabric type.", photo_choose:"Choose photo", photo_added:"Photo added", photo_remove:"Remove photo",
-    nav_store:"My Listings", store_title:"My Listings", store_sub:"Products you've put up for sale. Customers can buy these right now.", store_empty:"You haven't listed any products yet.", list_new:" List a product", edit:"Edit", del:"Delete", your_listing:"Your listing", deleted_ok:"Listing removed", saved_ok:"Changes saved", save_changes:"Save changes", live:"Live", del_confirm:"Remove this listing?",
+    nav_store:"My Listings", store_title:"My Listings", store_sub:"Fabrics you've listed. Buyers can see them, message you and request swatches now; ordering opens in 2027.", store_empty:"You haven't listed any products yet.", list_new:" List a product", edit:"Edit", del:"Delete", your_listing:"Your listing", deleted_ok:"Listing removed", saved_ok:"Changes saved", save_changes:"Save changes", live:"Live", del_confirm:"Remove this listing?",
     trending:"Trending now", recent_viewed:"Recently viewed", related:"You might also like", more_seller:"More from this seller", visit_store:"Visit store", seller_store:"Store", products_word:"products",
     notifs:"Notifications", no_notifs:"No notifications", notif1:"New message from Nam Phong Textiles", notif2:"Your order is being prepared for shipping", notif3:"A fabric you saved is now in stock", mark_read:"Mark all read", clear_data:"Reset demo data",
     ai_open:"AI Assistant", ai_title:"FabriTrade AI", ai_sub:"Answers about fabric, orders and FabriTrade", ai_ph:"Ask the AI anything…", ai_send:"Send",
@@ -559,7 +566,7 @@ const I18N = {
     price_breaks:"Bulk price breaks", tier_qty:"Order size", tier_price:"Per meter", best_price:" best price applied",
     sample_order:"Order a sample swatch", sample_desc:"Get a small piece to check quality before a big order.", sample_fee:"Sample + shipping", sample_confirm:"Order sample", sample_placed:"Sample ordered — the seller will ship you a swatch.",
     track_paid:"Paid", track_prep:"Preparing", track_ship:"Shipped", track_deliver:"Delivered",
-    ai_fill:" AI: auto-fill details", ai_filled:"AI filled in suggested details — review and edit as you like.",
+    ai_fill:"Fill typical details", ai_filled:"Typical details for this fabric type are filled in. Check and change them to match your fabric.",
     tour_title:"Welcome to FabriTrade ", tour_body:"A quick 30-second tour:", tour1:" Browse & buy fabric from sellers worldwide.", tour2:" List your own fabric to sell in seconds.", tour3:" Messages are checked for off-platform payment requests.", tour4:" AI Price Watch tracks world news that moves prices.", tour_go:"Start exploring", tour_skip:"Maybe later",
     sp_traders:"active traders", sp_countries:"countries", sp_gmv:"traded to date", sp_rating:"avg. seller rating",
     how_t:"How FabriTrade works", how1t:"Find & sample", how1:"Browse listings, order a swatch, and message sellers in your language.", how2t:"Pay safely", how2:"From 2027 the seller is paid after you confirm delivery. We take 3.5%; the seller gets the rest.", how3t:"Receive & release", how3:"Confirm delivery, funds release to the seller, and you rate them. Done.",
@@ -580,7 +587,7 @@ const I18N = {
     nav_rfq:"RFQ Board", rfq_title:"RFQ Board — post what you need", rfq_sub:"Tell sellers what you're looking for and let them come to you with offers.",
     rfq_post:"Post a request", rfq_f_title:"What do you need?", rfq_f_qty:"Quantity (m)", rfq_f_budget:"Max price /m (USD)", rfq_f_notes:"Notes (GSM, color, certifications…)", rfq_submit:"Post request", rfq_posted:"Request posted — sellers will send you offers.",
     rfq_open:"Open requests", rfq_offers:"offers", rfq_send_offer:"Send offer", rfq_offer_sent:"Offer sent to the buyer.", rfq_your_price:"Your price per meter (USD)", rfq_no:"No requests yet — be the first to post one.", rfq_by:"by", rfq_budget:"Budget", rfq_qty:"Qty", rfq_ai_match:" AI match",
-    ai_src:" Let AI find sellers for me", ai_src_t:"AI Sourcing Agent", ai_src_s:"Listings that match this request:", ai_src_msg:"Draft message (ready to send):", ai_src_none:"No exact match yet — I'll alert you the moment a matching fabric is listed.", ai_src_send:"Send to seller", ai_src_draft:"Hi! I'm looking for {qty} m of {title}, around {budget}/m. Could you send a quote and a sample first? Thank you!",
+    ai_src:"Find matching listings", ai_src_t:"Matching listings", ai_src_s:"Listings that match this request:", ai_src_msg:"Draft message (ready to send):", ai_src_none:"No exact match yet — I'll alert you the moment a matching fabric is listed.", ai_src_send:"Send to seller", ai_src_draft:"Hi! I'm looking for {qty} m of {title}, around {budget}/m. Could you send a quote and a sample first? Thank you!",
     featured:" Featured", featured_row:"Featured fabrics", boost:" Boost", boost_t:"Boost this listing", boost_s:"Featured listings appear at the top of the marketplace and in the Featured row for 7 days.", boost_price:"Boost fee", boost_go:"Boost now", boosted:"Listing boosted — it's now featured!",
     tg_next:"Next ", tg_back:" Back", tg_skip:"Skip tour", tg_done:"Finish", tg_step:"Step", tg_of:"of", tg_restart:"Start the tour", nav_help:"Help",
     tg1t:"Welcome to FabriTrade ", tg1:"This 1-minute tour walks you through the app while you watch it happen. You can skip anytime and restart it from the  button.",
@@ -641,7 +648,7 @@ const I18N = {
     cart_comm:"平台费(3.5%，从卖家扣)", cart_pay:"您共支付",
     qview:"快速查看",
     fld_photo:"产品照片", photo_hint:"上传您自己的面料照片(JPG/PNG)。真实照片能获得更多回复。没有照片时,买家只会看到面料类型。", photo_choose:"选择照片", photo_added:"已添加照片", photo_remove:"移除照片",
-    nav_store:"我的商品", store_title:"我的商品", store_sub:"您上架出售的产品。顾客现在即可购买。", store_empty:"您还没有上架任何产品。", list_new:" 上架产品", edit:"编辑", del:"删除", your_listing:"您的商品", deleted_ok:"商品已下架", saved_ok:"修改已保存", save_changes:"保存修改", live:"已上架", del_confirm:"确定下架此商品？",
+    nav_store:"我的商品", store_title:"我的商品", store_sub:"你上架的面料。买家现在可以查看、联系你并申请样布；下单将于 2027 年开放。", store_empty:"您还没有上架任何产品。", list_new:" 上架产品", edit:"编辑", del:"删除", your_listing:"您的商品", deleted_ok:"商品已下架", saved_ok:"修改已保存", save_changes:"保存修改", live:"已上架", del_confirm:"确定下架此商品？",
     trending:"热门推荐", recent_viewed:"最近浏览", related:"您可能还喜欢", more_seller:"该卖家的更多商品", visit_store:"进入店铺", seller_store:"店铺", products_word:"件商品",
     notifs:"通知", no_notifs:"暂无通知", notif1:"南丰纺织发来新消息", notif2:"您的订单正在备货发货", notif3:"您收藏的面料已有货", mark_read:"全部已读", clear_data:"重置演示数据",
     ai_open:"AI 助手", ai_title:"FabriTrade AI", ai_sub:"解答面料、订单和 FabriTrade 的问题", ai_ph:"向 AI 提问……", ai_send:"发送",
@@ -653,7 +660,7 @@ const I18N = {
     price_breaks:"批量阶梯价", tier_qty:"订购量", tier_price:"每米", best_price:" 已应用最优价",
     sample_order:"订购样布", sample_desc:"下大单前先拿小样检查质量。", sample_fee:"样品+运费", sample_confirm:"订购样品", sample_placed:"已订购样品——卖家将寄送样布给您。",
     track_paid:"已付款", track_prep:"备货中", track_ship:"已发货", track_deliver:"已送达",
-    ai_fill:" AI：自动填写详情", ai_filled:"AI 已填写建议详情——请查看并按需修改。",
+    ai_fill:"填写常用参数", ai_filled:"已按面料类型填入常用参数，请核对并改成你的面料数据。",
     tour_title:"欢迎来到 FabriTrade ", tour_body:"30 秒快速导览：", tour1:" 浏览并购买全球卖家的面料。", tour2:" 几秒钟上架您自己的面料。", tour3:" 消息会被检查是否有平台外付款请求。", tour4:" AI 价格监测追踪影响价格的全球新闻。", tour_go:"开始探索", tour_skip:"以后再说",
     sp_traders:"活跃交易者", sp_countries:"个国家", sp_gmv:"累计成交额", sp_rating:"平均卖家评分",
     how_t:"FabriTrade 如何运作", how1t:"寻找与打样", how1:"浏览商品、订样布，用您的语言联系卖家。", how2t:"安全付款", how2:"2027 年起，您确认收货后卖家才收款。我们收 3.5%，其余归卖家。", how3t:"收货与放款", how3:"确认收货后放款给卖家，并为其评分。完成。",
@@ -674,7 +681,7 @@ const I18N = {
     nav_rfq:"询价板", rfq_title:"询价板——发布您的需求", rfq_sub:"告诉卖家您想要什么，让他们主动向您报价。",
     rfq_post:"发布需求", rfq_f_title:"您需要什么？", rfq_f_qty:"数量(米)", rfq_f_budget:"最高单价/米(美元)", rfq_f_notes:"备注(克重、颜色、认证……)", rfq_submit:"发布需求", rfq_posted:"需求已发布——卖家将向您报价。",
     rfq_open:"进行中的需求", rfq_offers:"个报价", rfq_send_offer:"发送报价", rfq_offer_sent:"报价已发送给买家。", rfq_your_price:"您的每米价格(美元)", rfq_no:"暂无需求——来发布第一条吧。", rfq_by:"发布者", rfq_budget:"预算", rfq_qty:"数量", rfq_ai_match:" AI 匹配",
-    ai_src:" 让 AI 帮我找卖家", ai_src_t:"AI 采购助手", ai_src_s:"符合此需求的商品：", ai_src_msg:"消息草稿（可直接发送）：", ai_src_none:"暂无完全匹配——一有符合的面料上架我会立即提醒您。", ai_src_send:"发送给卖家", ai_src_draft:"您好！我想采购 {qty} 米 {title}，单价约 {budget}/米。能否先报价并寄样？谢谢！",
+    ai_src:"查找匹配的商品", ai_src_t:"匹配的商品", ai_src_s:"符合此需求的商品：", ai_src_msg:"消息草稿（可直接发送）：", ai_src_none:"暂无完全匹配——一有符合的面料上架我会立即提醒您。", ai_src_send:"发送给卖家", ai_src_draft:"您好！我想采购 {qty} 米 {title}，单价约 {budget}/米。能否先报价并寄样？谢谢！",
     featured:" 精选", featured_row:"精选面料", boost:" 推广", boost_t:"推广此商品", boost_s:"精选商品将在市场顶部和精选栏展示 7 天。", boost_price:"推广费用", boost_go:"立即推广", boosted:"商品已推广——现已成为精选！",
     tg_next:"下一步 ", tg_back:" 上一步", tg_skip:"跳过导览", tg_done:"完成", tg_step:"第", tg_of:"步，共", tg_restart:"开始导览", nav_help:"帮助",
     tg1t:"欢迎来到 FabriTrade ", tg1:"这个 1 分钟导览会一边演示一边带您了解应用。您可以随时跳过，并通过  按钮重新开始。",
@@ -735,7 +742,7 @@ const I18N = {
     cart_comm:"Phí nền tảng (3,5%, từ người bán)", cart_pay:"Tổng bạn trả",
     qview:"Xem nhanh",
     fld_photo:"Ảnh sản phẩm", photo_hint:"Tải lên ảnh vải của bạn (JPG/PNG). Ảnh thật giúp nhận nhiều phản hồi hơn. Nếu không có ảnh, người mua chỉ thấy loại vải.", photo_choose:"Chọn ảnh", photo_added:"Đã thêm ảnh", photo_remove:"Xóa ảnh",
-    nav_store:"Sản phẩm của tôi", store_title:"Sản phẩm của tôi", store_sub:"Sản phẩm bạn đang rao bán. Khách hàng có thể mua ngay.", store_empty:"Bạn chưa đăng bán sản phẩm nào.", list_new:" Đăng bán sản phẩm", edit:"Sửa", del:"Xóa", your_listing:"Sản phẩm của bạn", deleted_ok:"Đã gỡ sản phẩm", saved_ok:"Đã lưu thay đổi", save_changes:"Lưu thay đổi", live:"Đang bán", del_confirm:"Gỡ sản phẩm này?",
+    nav_store:"Sản phẩm của tôi", store_title:"Sản phẩm của tôi", store_sub:"Các loại vải bạn đã đăng. Người mua có thể xem, nhắn tin và xin mẫu vải ngay; đặt hàng mở vào năm 2027.", store_empty:"Bạn chưa đăng bán sản phẩm nào.", list_new:" Đăng bán sản phẩm", edit:"Sửa", del:"Xóa", your_listing:"Sản phẩm của bạn", deleted_ok:"Đã gỡ sản phẩm", saved_ok:"Đã lưu thay đổi", save_changes:"Lưu thay đổi", live:"Đang bán", del_confirm:"Gỡ sản phẩm này?",
     trending:"Đang thịnh hành", recent_viewed:"Đã xem gần đây", related:"Có thể bạn cũng thích", more_seller:"Thêm từ người bán này", visit_store:"Ghé cửa hàng", seller_store:"Cửa hàng", products_word:"sản phẩm",
     notifs:"Thông báo", no_notifs:"Không có thông báo", notif1:"Tin nhắn mới từ Nam Phong Textiles", notif2:"Đơn hàng của bạn đang được chuẩn bị giao", notif3:"Vải bạn đã lưu hiện đã có hàng", mark_read:"Đánh dấu đã đọc", clear_data:"Đặt lại dữ liệu demo",
     ai_open:"Trợ lý AI", ai_title:"FabriTrade AI", ai_sub:"Giải đáp về vải, đơn hàng và FabriTrade", ai_ph:"Hỏi AI bất cứ điều gì…", ai_send:"Gửi",
@@ -747,7 +754,7 @@ const I18N = {
     price_breaks:"Giá theo số lượng", tier_qty:"Số lượng", tier_price:"Mỗi mét", best_price:" đã áp giá tốt nhất",
     sample_order:"Đặt mẫu vải", sample_desc:"Nhận mảnh nhỏ để kiểm tra chất lượng trước khi đặt lớn.", sample_fee:"Mẫu + vận chuyển", sample_confirm:"Đặt mẫu", sample_placed:"Đã đặt mẫu — người bán sẽ gửi mảnh vải mẫu cho bạn.",
     track_paid:"Đã thanh toán", track_prep:"Đang chuẩn bị", track_ship:"Đã gửi", track_deliver:"Đã giao",
-    ai_fill:" AI: tự điền chi tiết", ai_filled:"AI đã điền gợi ý — hãy xem và chỉnh sửa tùy ý.",
+    ai_fill:"Điền thông số thường gặp", ai_filled:"Đã điền thông số thường gặp cho loại vải này. Hãy kiểm tra và sửa cho đúng vải của bạn.",
     tour_title:"Chào mừng đến FabriTrade ", tour_body:"Giới thiệu nhanh 30 giây:", tour1:" Duyệt & mua vải từ người bán toàn cầu.", tour2:" Đăng bán vải của bạn trong vài giây.", tour3:" Tin nhắn được kiểm tra yêu cầu thanh toán ngoài nền tảng.", tour4:" Theo dõi giá AI bám tin tức ảnh hưởng giá.", tour_go:"Bắt đầu khám phá", tour_skip:"Để sau",
     sp_traders:"nhà giao dịch", sp_countries:"quốc gia", sp_gmv:"đã giao dịch", sp_rating:"đánh giá TB người bán",
     how_t:"FabriTrade hoạt động thế nào", how1t:"Tìm & lấy mẫu", how1:"Xem tin đăng, đặt mẫu và nhắn người bán bằng ngôn ngữ của bạn.", how2t:"Thanh toán an toàn", how2:"Từ 2027, người bán nhận tiền sau khi bạn xác nhận nhận hàng. Chúng tôi thu 3,5%, phần còn lại thuộc người bán.", how3t:"Nhận & giải ngân", how3:"Xác nhận nhận hàng, tiền chuyển cho người bán, và bạn đánh giá họ. Xong.",
@@ -768,7 +775,7 @@ const I18N = {
     nav_rfq:"Bảng yêu cầu báo giá", rfq_title:"Bảng RFQ — đăng thứ bạn cần", rfq_sub:"Cho người bán biết bạn tìm gì và để họ chủ động gửi báo giá.",
     rfq_post:"Đăng yêu cầu", rfq_f_title:"Bạn cần gì?", rfq_f_qty:"Số lượng (m)", rfq_f_budget:"Giá tối đa /m (USD)", rfq_f_notes:"Ghi chú (GSM, màu, chứng nhận…)", rfq_submit:"Đăng yêu cầu", rfq_posted:"Đã đăng — người bán sẽ gửi báo giá cho bạn.",
     rfq_open:"Yêu cầu đang mở", rfq_offers:"báo giá", rfq_send_offer:"Gửi báo giá", rfq_offer_sent:"Đã gửi báo giá cho người mua.", rfq_your_price:"Giá của bạn mỗi mét (USD)", rfq_no:"Chưa có yêu cầu — hãy là người đầu tiên.", rfq_by:"bởi", rfq_budget:"Ngân sách", rfq_qty:"SL", rfq_ai_match:" AI khớp",
-    ai_src:" Để AI tìm người bán cho tôi", ai_src_t:"Trợ lý tìm nguồn AI", ai_src_s:"Các tin đăng phù hợp yêu cầu này:", ai_src_msg:"Tin nhắn soạn sẵn (gửi ngay):", ai_src_none:"Chưa có khớp chính xác — tôi sẽ báo ngay khi có vải phù hợp.", ai_src_send:"Gửi cho người bán", ai_src_draft:"Chào! Tôi cần {qty} m {title}, khoảng {budget}/m. Bạn có thể báo giá và gửi mẫu trước không? Cảm ơn!",
+    ai_src:"Tìm tin đăng phù hợp", ai_src_t:"Tin đăng phù hợp", ai_src_s:"Các tin đăng phù hợp yêu cầu này:", ai_src_msg:"Tin nhắn soạn sẵn (gửi ngay):", ai_src_none:"Chưa có khớp chính xác — tôi sẽ báo ngay khi có vải phù hợp.", ai_src_send:"Gửi cho người bán", ai_src_draft:"Chào! Tôi cần {qty} m {title}, khoảng {budget}/m. Bạn có thể báo giá và gửi mẫu trước không? Cảm ơn!",
     featured:" Nổi bật", featured_row:"Vải nổi bật", boost:" Đẩy tin", boost_t:"Đẩy tin đăng này", boost_s:"Tin nổi bật xuất hiện đầu sàn và trong hàng Nổi bật trong 7 ngày.", boost_price:"Phí đẩy tin", boost_go:"Đẩy ngay", boosted:"Đã đẩy tin — giờ là tin nổi bật!",
     tg_next:"Tiếp ", tg_back:" Quay lại", tg_skip:"Bỏ qua", tg_done:"Hoàn tất", tg_step:"Bước", tg_of:"/", tg_restart:"Bắt đầu hướng dẫn", nav_help:"Trợ giúp",
     tg1t:"Chào mừng đến FabriTrade ", tg1:"Hướng dẫn 1 phút này đưa bạn đi qua ứng dụng khi bạn xem trực tiếp. Bạn có thể bỏ qua bất cứ lúc nào và mở lại từ nút .",
@@ -1289,7 +1296,7 @@ function viewDetail(){
           <button class="btn btn-ghost" style="margin-top:0" onclick="contactSeller(${x.id})"> ${t("contact")}</button>
           <button class="btn btn-ghost" style="margin-top:0;flex:none;width:auto;padding:12px 16px" onclick="toggleFav(${x.id});">${state.fav.includes(x.id)?t("saved_label"):t("save_label")}</button>
         </div>
-        <button class="btn btn-ghost" onclick="orderSample(${x.id})"> ${t("sample_order")}</button>
+        ${isPrelaunch()?"":`<button class="btn btn-ghost" onclick="orderSample(${x.id})"> ${t("sample_order")}</button>`}
         <div class="commission-note">${t("comm_note")}</div>
       </div>
     </div>
@@ -1897,50 +1904,129 @@ async function pushAI(text){
   setTimeout(()=>{ aiMsgs.push({bot:true,t:aiReply(text)}); renderAI(); }, 550);
 }
 
-/* ============ interactive guided tour ============ */
-// Each step explains one part of the app AND navigates to it, so users learn by watching.
-const TOUR=[
-  {k:"tg1", go:()=>{ state.search=""; go("browse"); }},
-  {k:"tg2", go:()=>go("browse")},
-  {k:"tg3", go:()=>{ const x=LISTINGS[0]; if(x) openDetail(x.id); else go("browse"); }},
-  {k:"tg4", go:()=>go("cart")},
-  {k:"tg5", go:()=>{ state.role="seller"; state.editId=null; state.uploadImg=null; go("sell"); }},
-  {k:"tg6", go:()=>{ state.role="seller"; go("store"); }},
-  {k:"tg7", go:()=>go("rfq")},
-  {k:"tg8", go:()=>{ state.threadId=1; go("messages"); }},
-  {k:"tg9", go:()=>go("market")},
-  {k:"tg10", go:()=>{ go("orders"); const f=document.getElementById("aiFab"); if(f){f.classList.remove("pulse"); void f.offsetWidth; f.classList.add("pulse");} }},
-  {k:"tg11", go:()=>go("help")},
+/* ============ interactive guided tour (v2): pick a path, each step opens the feature and highlights it ============ */
+Object.assign(I18N.en,{
+  t2_0t:"Welcome to FabriTrade", t2_0:"FabriTrade connects fabric sellers in Vietnam with buyers around the world. This short tour opens each feature and shows you where it is. What would you like to do?",
+  t2_pbuy:"I want to buy fabric", t2_psell:"I want to sell fabric", t2_pall:"Show me everything",
+  t2_langt:"Your language and currency", t2_lang:"Switch between English, 中文 and Tiếng Việt here, and show prices in USD, VND or CNY. Chats are translated into the language you pick.",
+  t2_browset:"Find fabric", t2_browse:"Search by name, then narrow it down with the filters: fabric type, origin, certification, minimum order and price.",
+  t2_detailt:"Every detail before you buy", t2_detail:"Each fabric shows composition, weight (GSM), width, stock and lead time. The price breaks show what you'd pay per metre for bigger quantities.",
+  t2_swatcht:"Request a free swatch", t2_swatch:"Feel the fabric before you commit. During early access a swatch is free, with no account and no payment. We reply within 2 business days.",
+  t2_cartt:"Save and plan your order", t2_cart:"Save fabrics you like and add them to your cart. Ordering and payment open in 2027: your money is held and the seller is paid only after you confirm the fabric arrived as described.",
+  t2_rfqbt:"Can't find it? Post a request", t2_rfqb:"On the RFQ Board, describe what you need (fabric, quantity, budget) and sellers send you offers. “Find matching listings” shows fabrics that already fit.",
+  t2_msgt:"Private, translated messages", t2_msg:"Chat with sellers and buyers here. Your email and phone number are never shown. Messages are translated into your language automatically (switch it off at the top of a chat), and requests to pay outside FabriTrade are flagged to keep you safe.",
+  t2_pwt:"AI Price Watch", t2_pw:"Recent news on cotton, oil, shipping and tariffs, each with a short AI note on how it might affect fabric prices. It's a guide, not a prediction.",
+  t2_ait:"Ask the assistant", t2_ai:"Questions about fabric, ordering or shipping? The Assistant button at the bottom right answers in your language. Please don't type personal information into it.",
+  t2_rolet:"Switch to Seller", t2_role:"Use Buyer and Seller to switch views. As a seller you get the Sell page, your listings and your dashboard.",
+  t2_sellt:"List a fabric in minutes", t2_sell:"Add a photo, the price per metre, minimum order, width and weight, then publish. “Fill typical details” fills common values for the fabric type for you to check. Prefer Zalo? Send photos at fabritrade.net/ban-vai and we'll write the listing for you.",
+  t2_demandt:"What buyers are asking for", t2_demand:"On the live site, a box at the top of this page shows real swatch requests and RFQs from the last 90 days, with buyer details hidden, so you know which fabrics to list.",
+  t2_storet:"Your listings", t2_store:"Edit or remove your fabrics here. Sellers who list before launch keep a permanent Founding seller badge.",
+  t2_dasht:"Your dashboard", t2_dash:"Track your orders, sales and messages. From 2027 you're paid after the buyer confirms delivery. Listing stays free; FabriTrade keeps 3.5% of each completed sale.",
+  t2_rfqst:"Send offers to buyers", t2_rfqs:"On the RFQ Board, open a buyer's request and send your price. It's the quickest way to reach someone who is already looking.",
+  t2_endt:"You're all set", t2_end:"Help has answers to common questions, this tour (start it again any time) and your account settings. Forgot your password? Use “Forgot password?” on the sign-in screen."
+});
+Object.assign(I18N.zh,{
+  t2_0t:"欢迎来到 FabriTrade", t2_0:"FabriTrade 连接越南的面料卖家和全球买家。这个简短导览会逐一打开每个功能，告诉你它在哪里。你想做什么？",
+  t2_pbuy:"我想买面料", t2_psell:"我想卖面料", t2_pall:"全部看看",
+  t2_langt:"语言和货币", t2_lang:"在这里切换 English、中文 和 Tiếng Việt，并用 USD、VND 或 CNY 显示价格。聊天内容会翻译成你选择的语言。",
+  t2_browset:"查找面料", t2_browse:"按名称搜索，再用筛选缩小范围：面料类型、产地、认证、起订量和价格。",
+  t2_detailt:"购买前了解所有细节", t2_detail:"每款面料都显示成分、克重（GSM）、幅宽、库存和交货期。阶梯价格显示数量更大时每米的价格。",
+  t2_swatcht:"申请免费样布", t2_swatch:"下单前先摸一摸面料。提前体验期间样布免费，无需注册，无需付款。我们会在 2 个工作日内回复。",
+  t2_cartt:"收藏并规划订单", t2_cart:"收藏喜欢的面料并加入购物车。下单和支付将于 2027 年开放：你的款项会被暂管，确认面料与描述相符后才付给卖家。",
+  t2_rfqbt:"找不到？发布询价", t2_rfqb:"在询价板上写明需求（面料、数量、预算），卖家会给你报价。“查找匹配的商品”会显示已经符合的面料。",
+  t2_msgt:"私密、自动翻译的消息", t2_msg:"在这里与卖家和买家聊天。你的邮箱和电话号码不会显示。消息会自动翻译成你的语言（可在聊天顶部关闭），要求在 FabriTrade 之外付款的消息会被标记，保护你的安全。",
+  t2_pwt:"AI 价格监测", t2_pw:"关于棉花、石油、运输和关税的最新新闻，每条附有 AI 简评，说明可能如何影响面料价格。仅供参考，不是预测。",
+  t2_ait:"问问助手", t2_ai:"有关于面料、下单或运输的问题？右下角的助手按钮会用你的语言回答。请不要输入个人信息。",
+  t2_rolet:"切换到卖家", t2_role:"用“买家”和“卖家”切换视图。作为卖家，你可以使用上架页面、我的商品和仪表盘。",
+  t2_sellt:"几分钟上架一款面料", t2_sell:"添加照片、每米价格、起订量、幅宽和克重，然后发布。“填写常用参数”会按面料类型填入常见数值，请自行核对。更喜欢用 Zalo？在 fabritrade.net/ban-vai 发送照片，我们帮你写商品信息。",
+  t2_demandt:"买家正在找什么", t2_demand:"在正式网站上，这个页面顶部会显示最近 90 天真实的样布申请和询价（买家信息已隐藏），让你知道该上架哪些面料。",
+  t2_storet:"我的商品", t2_store:"在这里编辑或删除你的面料。上线前上架的卖家将永久保留“创始卖家”徽章。",
+  t2_dasht:"你的仪表盘", t2_dash:"查看订单、销售和消息。从 2027 年起，买家确认收货后你会收到货款。上架始终免费；FabriTrade 从每笔成交中收取 3.5%。",
+  t2_rfqst:"给买家报价", t2_rfqs:"在询价板上打开买家的需求并发送你的报价。这是接触正在找货的买家最快的方法。",
+  t2_endt:"一切就绪", t2_end:"帮助页面有常见问题解答、这个导览（随时可以重新开始）和账户设置。忘记密码？在登录页点击“忘记密码？”。"
+});
+Object.assign(I18N.vi,{
+  t2_0t:"Chào mừng đến FabriTrade", t2_0:"FabriTrade kết nối người bán vải ở Việt Nam với người mua trên khắp thế giới. Phần giới thiệu ngắn này mở từng tính năng và chỉ cho bạn chỗ của nó. Bạn muốn làm gì?",
+  t2_pbuy:"Tôi muốn mua vải", t2_psell:"Tôi muốn bán vải", t2_pall:"Cho tôi xem tất cả",
+  t2_langt:"Ngôn ngữ và tiền tệ", t2_lang:"Chuyển giữa English, 中文 và Tiếng Việt ở đây, và xem giá bằng USD, VND hoặc CNY. Tin nhắn được dịch sang ngôn ngữ bạn chọn.",
+  t2_browset:"Tìm vải", t2_browse:"Tìm theo tên, rồi lọc theo loại vải, xuất xứ, chứng nhận, số lượng tối thiểu và giá.",
+  t2_detailt:"Mọi thông tin trước khi mua", t2_detail:"Mỗi loại vải hiển thị thành phần, định lượng (GSM), khổ, tồn kho và thời gian giao. Bảng giá theo số lượng cho biết giá mỗi mét khi mua nhiều hơn.",
+  t2_swatcht:"Xin mẫu vải miễn phí", t2_swatch:"Sờ thử vải trước khi quyết định. Trong giai đoạn truy cập sớm, mẫu vải miễn phí, không cần tài khoản, không cần thanh toán. Chúng tôi trả lời trong 2 ngày làm việc.",
+  t2_cartt:"Lưu và lên kế hoạch đơn hàng", t2_cart:"Lưu vải bạn thích và thêm vào giỏ. Đặt hàng và thanh toán mở vào năm 2027: tiền của bạn được giữ lại và chỉ trả cho người bán sau khi bạn xác nhận vải đúng như mô tả.",
+  t2_rfqbt:"Không tìm thấy? Đăng yêu cầu", t2_rfqb:"Trên Bảng yêu cầu báo giá, ghi rõ bạn cần gì (loại vải, số lượng, ngân sách) và người bán sẽ gửi báo giá. “Tìm tin đăng phù hợp” hiện các loại vải đã khớp.",
+  t2_msgt:"Tin nhắn riêng tư, tự động dịch", t2_msg:"Trò chuyện với người bán và người mua ở đây. Email và số điện thoại của bạn không bao giờ hiển thị. Tin nhắn được tự động dịch sang ngôn ngữ của bạn (tắt ở đầu cuộc trò chuyện), và yêu cầu thanh toán ngoài FabriTrade sẽ bị gắn cờ để bảo vệ bạn.",
+  t2_pwt:"AI Theo dõi giá", t2_pw:"Tin mới về bông, dầu, vận chuyển và thuế quan, kèm ghi chú ngắn của AI về ảnh hưởng có thể đến giá vải. Chỉ để tham khảo, không phải dự báo.",
+  t2_ait:"Hỏi trợ lý", t2_ai:"Có câu hỏi về vải, đặt hàng hay vận chuyển? Nút Trợ lý ở góc dưới bên phải trả lời bằng ngôn ngữ của bạn. Đừng nhập thông tin cá nhân vào đó.",
+  t2_rolet:"Chuyển sang Người bán", t2_role:"Dùng Người mua và Người bán để đổi chế độ xem. Là người bán, bạn có trang Bán vải, tin đăng của bạn và bảng điều khiển.",
+  t2_sellt:"Đăng bán vải trong vài phút", t2_sell:"Thêm ảnh, giá mỗi mét, số lượng tối thiểu, khổ và định lượng, rồi đăng. “Điền thông số thường gặp” điền sẵn giá trị phổ biến theo loại vải để bạn kiểm tra. Thích dùng Zalo hơn? Gửi ảnh tại fabritrade.net/ban-vai, chúng tôi viết tin đăng giúp bạn.",
+  t2_demandt:"Người mua đang tìm gì", t2_demand:"Trên trang chính thức, ô ở đầu trang này hiển thị yêu cầu mẫu vải và báo giá thật trong 90 ngày qua (ẩn thông tin người mua), để bạn biết nên đăng loại vải nào.",
+  t2_storet:"Tin đăng của bạn", t2_store:"Sửa hoặc xóa vải của bạn ở đây. Người bán đăng tin trước khi ra mắt được giữ vĩnh viễn huy hiệu Người bán sáng lập.",
+  t2_dasht:"Bảng điều khiển", t2_dash:"Theo dõi đơn hàng, doanh số và tin nhắn. Từ năm 2027, bạn nhận tiền sau khi người mua xác nhận đã nhận hàng. Đăng tin luôn miễn phí; FabriTrade giữ 3,5% mỗi đơn bán thành công.",
+  t2_rfqst:"Gửi báo giá cho người mua", t2_rfqs:"Trên Bảng yêu cầu báo giá, mở yêu cầu của người mua và gửi giá của bạn. Đây là cách nhanh nhất để gặp người đang tìm hàng.",
+  t2_endt:"Bạn đã sẵn sàng", t2_end:"Trang Trợ giúp có câu trả lời cho câu hỏi thường gặp, phần giới thiệu này (bắt đầu lại bất cứ lúc nào) và cài đặt tài khoản. Quên mật khẩu? Bấm “Quên mật khẩu?” ở màn hình đăng nhập."
+});
+const asBuyer=()=>{ state.role="buyer"; }, asSeller=()=>{ state.role="seller"; };
+const navBtn=v=>`nav#nav button[onclick="go('${v}')"]`;
+const TOUR_STEPS=[
+  {k:"t2_0", path:"*", choose:true, go:()=>{ asBuyer(); state.search=""; go("browse"); }},
+  {k:"t2_lang", path:"*", go:()=>go("browse"), sel:"#lang"},
+  {k:"t2_browse", path:"buy", go:()=>{ asBuyer(); go("browse"); }, sel:"#searchBox"},
+  {k:"t2_detail", path:"buy", go:()=>{ asBuyer(); const x=LISTINGS[0]; if(x) openDetail(x.id); else go("browse"); }, sel:".pbreaks"},
+  {k:"t2_swatch", path:"buy", go:()=>{ asBuyer(); const x=LISTINGS[0]; if(x && state.view!=="detail") openDetail(x.id); }, sel:'button[onclick^="requestSwatch"]'},
+  {k:"t2_cart", path:"buy", go:()=>{ asBuyer(); go("cart"); }, sel:"#cartBtn"},
+  {k:"t2_rfqb", path:"buy", go:()=>{ asBuyer(); go("rfq"); }, sel:navBtn("rfq")},
+  {k:"t2_role", path:"sell", go:()=>{ asSeller(); go("store"); }, sel:"#roleSwitch"},
+  {k:"t2_sell", path:"sell", go:()=>{ asSeller(); state.editId=null; state.uploadImg=null; go("sell"); }, sel:".uploader"},
+  {k:"t2_demand", path:"sell", go:()=>{ asSeller(); if(state.view!=="sell") go("sell"); }, sel:"#demandBox"},
+  {k:"t2_store", path:"sell", go:()=>{ asSeller(); go("store"); }, sel:navBtn("store")},
+  {k:"t2_dash", path:"sell", go:()=>{ asSeller(); go("dash"); }, sel:navBtn("dash")},
+  {k:"t2_rfqs", path:"sell", go:()=>{ asSeller(); go("rfq"); }, sel:navBtn("rfq")},
+  {k:"t2_msg", path:"*", go:()=>{ if(THREADS[0] && !THREADS.find(x=>x.id===state.threadId)) state.threadId=THREADS[0].id; go("messages"); }, sel:".chat .head .toggle"},
+  {k:"t2_pw", path:"*", go:()=>go("market"), sel:navBtn("market")},
+  {k:"t2_ai", path:"*", go:()=>{ const f=document.getElementById("aiFab"); if(f){ f.classList.remove("pulse"); void f.offsetWidth; f.classList.add("pulse"); } }, sel:"#aiFab"},
+  {k:"t2_end", path:"*", go:()=>go("help"), sel:"#helpBtn"},
 ];
-let tourStep=-1;
-function showTour(){ // auto-offer once after first login (skippable)
-  try{ if(localStorage.getItem("ft_tour")) return; }catch(e){}
-  startTour();
-}
-function openTour(){ startTour(); }           //  button
-function startTour(){ tourStep=0; runTourStep(); }
-function runTourStep(){
-  const s=TOUR[tourStep]; if(!s){ endTour(); return; }
-  try{ s.go(); }catch(e){}
-  renderTourCard();
-}
+let tourStep=-1, tourPath="all", TOUR=TOUR_STEPS;
+function tourSteps(){ return TOUR_STEPS.filter(s=>s.path==="*" || tourPath==="all" || s.path===tourPath); }
+function showTour(){ try{ if(localStorage.getItem("ft_tour_v2")) return; }catch(e){} startTour(); }
+function openTour(){ startTour(); }
+function startTour(){ tourPath="all"; TOUR=tourSteps(); tourStep=0; runTourStep(); }
+function pickTour(p){ tourPath=p; TOUR=tourSteps(); if(p==="sell") state.role="seller"; tourStep=1; runTourStep(); }
+function runTourStep(){ const s=TOUR[tourStep]; if(!s){ endTour(); return; } try{ s.go(); }catch(e){} renderTourCard(); }
+function clearTourHL(){ document.querySelectorAll(".tour-hl").forEach(e=>e.classList.remove("tour-hl")); }
 function renderTourCard(){
   const s=TOUR[tourStep]; if(!s) return;
   const card=document.getElementById("tourCard"); if(!card) return;
   const n=TOUR.length, last=tourStep===n-1;
-  card.innerHTML=`
-    <div class="tc-top"><span class="tc-step">${t("tg_step")} ${tourStep+1} ${t("tg_of")} ${n}</span><span class="tc-x" onclick="endTour()">×</span></div>
-    <div class="tc-prog"><i style="width:${Math.round((tourStep+1)/n*100)}%"></i></div>
+  card.setAttribute("role","dialog"); card.setAttribute("aria-label",t(s.k+"t"));
+  card.innerHTML= s.choose ? `
+    <div class="tc-top"><span class="tc-step">FabriTrade</span><button type="button" class="tc-x" aria-label="${t("tg_skip")}" onclick="endTour()">×</button></div>
+    <h4>${t(s.k+"t")}</h4><p>${t(s.k)}</p>
+    <div class="tc-choose">
+      <button class="btn btn-primary" onclick="pickTour('buy')">${t("t2_pbuy")}</button>
+      <button class="btn btn-primary" onclick="pickTour('sell')">${t("t2_psell")}</button>
+      <button class="btn btn-ghost" onclick="pickTour('all')">${t("t2_pall")}</button>
+    </div>
+    <div class="tc-btns"><span class="sp"></span><span class="tc-skip" role="button" tabindex="0" onclick="endTour()">${t("tg_skip")}</span></div>` : `
+    <div class="tc-top"><span class="tc-step">${t("tg_step")} ${tourStep} ${t("tg_of")} ${n-1}</span><button type="button" class="tc-x" aria-label="${t("tg_skip")}" onclick="endTour()">×</button></div>
+    <div class="tc-prog"><i style="width:${Math.round(tourStep/(n-1)*100)}%"></i></div>
     <h4>${t(s.k+"t")}</h4><p>${t(s.k)}</p>
     <div class="tc-btns">
-      ${tourStep>0?`<button class="btn btn-ghost" onclick="tourStep--;runTourStep()">${t("tg_back")}</button>`:""}
+      <button class="btn btn-ghost" onclick="tourStep--;runTourStep()">${t("tg_back")}</button>
       <span class="sp"></span>
-      ${last?"":`<span class="tc-skip" onclick="endTour()">${t("tg_skip")}</span>`}
+      ${last?"":`<span class="tc-skip" role="button" tabindex="0" onclick="endTour()">${t("tg_skip")}</span>`}
       <button class="btn btn-primary" onclick="${last?'endTour()':'tourStep++;runTourStep()'}">${last?t("tg_done"):t("tg_next")}</button>
     </div>`;
   card.classList.add("show");
+  clearTourHL(); card.classList.remove("at-top");
+  if(s.sel) setTimeout(()=>{ if(TOUR[tourStep]!==s) return; const el=document.querySelector(s.sel); if(!el) return;
+    el.classList.add("tour-hl");
+    try{ el.scrollIntoView({block:"center",inline:"center",behavior:"smooth"}); }catch(e){}
+    setTimeout(()=>{ const r=el.getBoundingClientRect(), c=card.getBoundingClientRect(); if(r.bottom>c.top-12 && r.top<window.innerHeight*0.6) card.classList.remove("at-top"); else if(r.bottom>c.top-12) card.classList.add("at-top"); },350);
+  },80);
 }
-function endTour(){ tourStep=-1; const c=document.getElementById("tourCard"); if(c)c.classList.remove("show"); try{localStorage.setItem("ft_tour","1");}catch(e){} }
+function endTour(){ tourStep=-1; clearTourHL(); const c=document.getElementById("tourCard"); if(c){ c.classList.remove("show","at-top"); } try{ localStorage.setItem("ft_tour_v2","1"); }catch(e){} }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && tourStep>=0) endTour(); });
 
 /* ============ help & FAQ ============ */
 function viewHelp(){
